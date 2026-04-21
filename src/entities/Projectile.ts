@@ -59,13 +59,18 @@ export function spawnProjectile(k: KAPLAYCtx, opts: ProjectileSpawnOpts): Projec
     opts.kind === "linear" || opts.kind === "pierce" || opts.kind === "boomerang";
 
   const obj = k.add([
-    k.sprite(opts.sprite, opts.kind === "orbit" ? { anim: "spin" } : { frame: 0 }),
+    k.sprite(opts.sprite, { frame: 0 }),
     k.pos(opts.x, opts.y),
     k.anchor("center"),
     k.scale(opts.scale ?? (opts.kind === "orbit" ? 1.5 : 2)),
     k.rotate(rotatable ? rotation : 0),
     k.z(opts.kind === "ground" ? 2 : 7),
   ]);
+
+  // Safely try to play "spin" for orbit sprites that have it (e.g. magic-orb)
+  if (opts.kind === "orbit") {
+    try { (obj as any).play("spin"); } catch { /* single-frame sprite — skip */ }
+  }
 
   return {
     obj,

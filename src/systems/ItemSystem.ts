@@ -12,6 +12,7 @@ const MAX_ACTIVE_ITEMS = 10;
 const BASIC_DROP_CHANCE = 0.03;
 const ELITE_DROP_CHANCE = 0.18;
 const POPUP_MS = 1500;
+const WASTED_ITEM_XP = 40;
 
 export class ItemSystem {
   public items: Item[] = [];
@@ -96,6 +97,18 @@ export class ItemSystem {
     const now = Date.now();
     const stats = this.player.stats;
 
+    // If the item would have no effect, convert it to XP instead
+    if (this.isWasted(def)) {
+      const xpGain = WASTED_ITEM_XP;
+      stats.xp += xpGain;
+      popLabel(this.k, {
+        x, y, text: `+${xpGain} XP`,
+        color: [130, 200, 255],
+        durationMs: POPUP_MS,
+      });
+      return;
+    }
+
     switch (def.effect.kind) {
       case "heal":
         stats.hp = Math.min(stats.maxHp, stats.hp + def.effect.amount);
@@ -125,6 +138,21 @@ export class ItemSystem {
       case "xp":
         stats.xp += def.effect.amount;
         break;
+      case "equip-active":
+        stats.activeItem = def.effect.activeItemId;
+        stats.activeItemCooldownMs = 0;
+        break;
+    }
+  }
+
+  private isWasted(def: ItemDef): boolean {
+    const stats = this.player.stats;
+    switch (def.effect.kind) {
+      case "heal":
+      case "heal-full":
+        return stats.hp >= stats.maxHp;
+      default:
+        return false;
     }
   }
 

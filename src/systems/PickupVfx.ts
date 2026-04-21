@@ -164,24 +164,24 @@ export function impactVfx(k: KAPLAYCtx, opts: ImpactOpts): void {
   } = opts;
 
   const dur = kill ? 0.25 : 0.15;
-  const startRadius = kill ? radius * 0.6 : radius * 0.4;
   const endRadius = kill ? radius * 1.6 : radius;
   const startOpacity = kill ? 0.9 : 0.7;
 
-  // --- flash circle ---
+  // --- flash circle (use scale to animate size reliably) ---
   const flash = k.add([
-    k.circle(startRadius),
+    k.circle(endRadius),
     k.pos(x, y),
     k.anchor("center"),
     k.color(...color),
     k.opacity(startOpacity),
-    k.z(15),
+    k.scale(0.3),
+    k.z(20),
   ]);
   let t = 0;
   flash.onUpdate(() => {
     t += k.dt();
     const p = Math.min(t / dur, 1);
-    (flash as any).radius = startRadius + (endRadius - startRadius) * p;
+    (flash as any).scale = k.vec2(0.3 + 0.7 * p, 0.3 + 0.7 * p);
     (flash as any).opacity = startOpacity * (1 - p);
     if (p >= 1) flash.destroy();
   });
@@ -197,7 +197,7 @@ export function impactVfx(k: KAPLAYCtx, opts: ImpactOpts): void {
       k.anchor("center"),
       k.color(...color),
       k.opacity(0.9),
-      k.z(15),
+      k.z(20),
     ]);
     let st = 0;
     spark.onUpdate(() => {

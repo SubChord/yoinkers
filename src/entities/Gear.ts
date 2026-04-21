@@ -52,13 +52,21 @@ export function updateGearDrop(
   const magnetRange = BASE_GEM_MAGNET_RANGE * player.stats.magnetMult * 0.8;
 
   if (dist < magnetRange) {
+    const playerSpeed = player.stats.speed * (player.stats.speedBuffMult ?? 1);
+    const closeness = 1 - dist / magnetRange;
+    const flySpeed = Math.max(600, playerSpeed * 3) * (0.4 + 0.6 * closeness);
     const nx = dx / (dist || 1);
     const ny = dy / (dist || 1);
-    drop.obj.pos.x += nx * 200 * dt;
-    drop.baseY += ny * 200 * dt;
+    drop.obj.pos.x += nx * flySpeed * dt;
+    drop.baseY += ny * flySpeed * dt;
   }
 
-  if (dist < BASE_PICKUP_RANGE + 8) {
+  // Recalculate distance after magnet movement for accurate pickup detection
+  const dx2 = player.obj.pos.x - drop.obj.pos.x;
+  const dy2 = player.obj.pos.y - drop.baseY;
+  const dist2 = Math.hypot(dx2, dy2);
+
+  if (dist2 < BASE_PICKUP_RANGE + 8) {
     drop.obj.destroy();
     drop.glow.destroy();
     return "collected";

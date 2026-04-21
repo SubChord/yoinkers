@@ -201,12 +201,6 @@ function colorForKind(kind: UpgradeDef["kind"]): {
         outline: [186, 230, 150],
         hover: [68, 100, 66],
       };
-    case "active-item":
-      return {
-        bg: [86, 60, 30],
-        outline: [255, 200, 80],
-        hover: [110, 80, 44],
-      };
   }
 }
 
@@ -218,7 +212,5 @@ function tagForKind(kind: UpgradeDef["kind"]): string {
       return "WEAPON UPGRADE";
     case "boost":
       return "BOOST";
-    case "active-item":
-      return "ACTIVE ITEM";
   }
 }

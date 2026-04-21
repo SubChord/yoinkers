@@ -36,10 +36,6 @@ function isAvailable(def: UpgradeDef, player: Player): boolean {
   }
 
   // Active items: available if you don't already have this one equipped
-  if (def.kind === "active-item") {
-    return player.stats.activeItem !== def.activeItem;
-  }
-
   return true;
 }
 
@@ -56,12 +52,6 @@ export function applyUpgrade(player: Player, upgrade: UpgradeDef): void {
 
   if (upgrade.kind === "weapon-upgrade") {
     // Weapon stats are recomputed from upgrade counts inside WeaponSystem.
-    return;
-  }
-
-  if (upgrade.kind === "active-item" && upgrade.activeItem) {
-    stats.activeItem = upgrade.activeItem;
-    stats.activeItemCooldownMs = 0;
     return;
   }
 

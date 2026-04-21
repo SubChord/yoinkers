@@ -1,3 +1,5 @@
+import type { ActiveItemId } from "../types/GameTypes";
+
 export type ItemId =
   | "onigiri"
   | "sushi"
@@ -7,7 +9,9 @@ export type ItemId =
   | "water-potion"
   | "scroll-fire"
   | "scroll-thunder"
-  | "gold-coin";
+  | "gold-coin"
+  | "redBull"
+  | "novaBlast";
 
 export type ItemEffect =
   | { kind: "heal"; amount: number }
@@ -17,7 +21,8 @@ export type ItemEffect =
   | { kind: "buff-speed"; mult: number; durationMs: number }
   | { kind: "nuke"; damage: number }
   | { kind: "slow-all"; mult: number; durationMs: number }
-  | { kind: "xp"; amount: number };
+  | { kind: "xp"; amount: number }
+  | { kind: "equip-active"; activeItemId: ActiveItemId };
 
 export interface ItemDef {
   id: ItemId;
@@ -100,6 +105,22 @@ export const ITEM_DEFS: Record<ItemId, ItemDef> = {
     rarity: 0.8,
     effect: { kind: "xp", amount: 80 },
     pickupText: "+80 XP",
+  },
+  redBull: {
+    id: "redBull",
+    label: "Red Bull",
+    spriteKey: "item-redbull",
+    rarity: 0.15,
+    effect: { kind: "equip-active", activeItemId: "redBull" },
+    pickupText: "Red Bull!",
+  },
+  novaBlast: {
+    id: "novaBlast",
+    label: "Nova Blast",
+    spriteKey: "weapon-bomb",
+    rarity: 0.15,
+    effect: { kind: "equip-active", activeItemId: "novaBlast" },
+    pickupText: "Nova Blast!",
   },
 };
 
