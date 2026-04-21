@@ -25,9 +25,9 @@ const LAVA_BRIGHT: [number, number, number] = [255, 160, 30];
 const LAVA_OUTLINE: [number, number, number] = [255, 200, 60];
 
 // Full-screen popup timing
-const POPUP_DURATION_MS = 2000;
-const POPUP_ENTER_MS = 400;
-const POPUP_EXIT_MS = 400;
+const POPUP_DURATION_MS = 1000;
+const POPUP_ENTER_MS = 200;
+const POPUP_EXIT_MS = 300;
 
 type SweepDir = "right" | "down" | "left" | "up";
 
@@ -107,18 +107,11 @@ export class WallHazardSystem {
 
   /* ---- full-screen popup ---- */
 
-  private showPopup(dir: SweepDir): void {
+  private showPopup(): void {
     const k = this.k;
     const cx = GAME_WIDTH / 2;
     const cy = GAME_HEIGHT / 2;
     const created: GameObj[] = [];
-
-    const dirLabels: Record<SweepDir, string> = {
-      right: "FROM LEFT  >>>",
-      left:  "<<<  FROM RIGHT",
-      down:  "FROM ABOVE  vvv",
-      up:    "^^^  FROM BELOW",
-    };
 
     // Backdrop
     const backdrop = k.add([
@@ -130,45 +123,26 @@ export class WallHazardSystem {
 
     // Glow ring
     const glow = k.add([
-      k.circle(260),
-      k.pos(cx, cy - 10), k.anchor("center"),
+      k.circle(200),
+      k.pos(cx, cy), k.anchor("center"),
       k.color(255, 120, 20), k.opacity(0), k.scale(0.2),
       k.fixed(), k.z(301),
     ]);
     created.push(glow);
 
-    // Panel
-    const panel = k.add([
-      k.rect(620, 200, { radius: 14 }),
-      k.pos(cx, cy - 10), k.anchor("center"),
-      k.color(40, 16, 8), k.opacity(0), k.scale(0.5),
-      k.outline(3, k.rgb(...LAVA_OUTLINE)),
-      k.fixed(), k.z(302),
-    ]);
-    created.push(panel);
-
     // Title
     const title = k.add([
-      k.text("LAVA WALL", { size: 42 }),
-      k.pos(cx, cy - 50), k.anchor("center"),
+      k.text("LAVA WALL", { size: 48 }),
+      k.pos(cx, cy - 20), k.anchor("center"),
       k.color(...LAVA_BRIGHT), k.opacity(0), k.scale(0.5),
       k.fixed(), k.z(303),
     ]);
     created.push(title);
 
-    // Direction
-    const dirText = k.add([
-      k.text(dirLabels[dir], { size: 24 }),
-      k.pos(cx, cy + 10), k.anchor("center"),
-      k.color(255, 220, 150), k.opacity(0),
-      k.fixed(), k.z(303),
-    ]);
-    created.push(dirText);
-
     // Subtitle
     const sub = k.add([
-      k.text("FIND THE GAP!", { size: 20 }),
-      k.pos(cx, cy + 50), k.anchor("center"),
+      k.text("FIND THE GAP!", { size: 22 }),
+      k.pos(cx, cy + 30), k.anchor("center"),
       k.color(60, 255, 80), k.opacity(0),
       k.fixed(), k.z(303),
     ]);
@@ -186,35 +160,24 @@ export class WallHazardSystem {
       if (elapsed < POPUP_ENTER_MS) {
         const t = elapsed / POPUP_ENTER_MS;
         const e = easeOutCubic(t);
-        (backdrop as any).opacity = e * 0.7;
-        (glow as any).opacity = e * 0.3;
-        (panel as any).opacity = e;
+        (backdrop as any).opacity = e * 0.5;
+        (glow as any).opacity = e * 0.25;
         (title as any).opacity = e;
-        (dirText as any).opacity = t > 0.3 ? (t - 0.3) / 0.7 : 0;
-        (sub as any).opacity = t > 0.5 ? (t - 0.5) / 0.5 : 0;
+        (sub as any).opacity = e * 0.8;
         (glow as any).scaleTo(0.2 + e * 1.0);
-        (panel as any).scaleTo(0.5 + easeOutBack(t) * 0.5);
         (title as any).scaleTo(0.5 + easeOutBack(t) * 0.5);
       } else if (elapsed > POPUP_DURATION_MS - POPUP_EXIT_MS) {
         const t = (elapsed - (POPUP_DURATION_MS - POPUP_EXIT_MS)) / POPUP_EXIT_MS;
         const e = 1 - t;
-        (backdrop as any).opacity = e * 0.7;
-        (glow as any).opacity = e * 0.3;
-        (panel as any).opacity = e;
+        (backdrop as any).opacity = e * 0.5;
+        (glow as any).opacity = e * 0.25;
         (title as any).opacity = e;
-        (dirText as any).opacity = e;
-        (sub as any).opacity = e;
+        (sub as any).opacity = e * 0.8;
       }
 
       // Pulse glow
-      const pulse = 1 + Math.sin(elapsed * 0.01) * 0.08;
+      const pulse = 1 + Math.sin(elapsed * 0.012) * 0.08;
       (glow as any).scaleTo(1.2 * pulse);
-
-      // Flicker title color
-      const flick = Math.sin(elapsed * 0.008);
-      const tr = LAVA_BRIGHT[0] + Math.floor(flick * 20);
-      const tg = LAVA_BRIGHT[1] - Math.floor(flick * 40);
-      try { (title as any).color = { r: tr, g: Math.max(40, tg), b: 20 }; } catch { /* skip */ }
     });
 
     this.playSfx("sfx-hit");
@@ -248,7 +211,7 @@ export class WallHazardSystem {
     const speed = WALL_BASE_SPEEDS[speedIdx] + Math.max(0, wave - FIRST_WALL_WAVE) * WALL_SPEED_PER_WAVE;
 
     // Show full-screen popup
-    this.showPopup(dir);
+    this.showPopup();
 
     // Flashing lava edge markers
     const objs: GameObj[] = [];
