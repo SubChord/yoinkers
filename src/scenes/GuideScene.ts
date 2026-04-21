@@ -7,6 +7,14 @@ import { WEAPON_DEFS, type WeaponDef } from "../config/WeaponDefs";
 
 type Tab = "weapons" | "enemies" | "items" | "gear";
 
+const GRID_TOP = 180;
+const COL_WIDTH = 570;
+const ROW_HEIGHT = 70;
+const VIEWPORT_BOTTOM = GAME_HEIGHT - 100; // clear the Back button
+const VIEWPORT_HEIGHT = VIEWPORT_BOTTOM - GRID_TOP;
+const CHROME_Z = 10;
+const SCROLL_KEY_STEP = ROW_HEIGHT;
+
 export function registerGuideScene(k: KAPLAYCtx): void {
   k.scene("guide", () => {
     k.add([k.rect(GAME_WIDTH, GAME_HEIGHT), k.pos(0, 0), k.color(12, 24, 18), k.fixed()]);
@@ -17,18 +25,43 @@ export function registerGuideScene(k: KAPLAYCtx): void {
       k.pos(GAME_WIDTH / 2, 52),
       k.color(242, 244, 204),
       k.fixed(),
+      k.z(CHROME_Z),
     ]);
 
     let activeTab: Tab = "weapons";
     let contentObjects: GameObj[] = [];
+    let scrollY = 0;
+    let maxScroll = 0;
+    let scrollHint: GameObj | null = null;
 
     const renderContent = () => {
       for (const o of contentObjects) o.destroy();
       contentObjects = [];
-      if (activeTab === "weapons") renderWeapons(k, contentObjects);
-      else if (activeTab === "enemies") renderEnemies(k, contentObjects);
-      else if (activeTab === "items") renderItems(k, contentObjects);
-      else renderGear(k, contentObjects);
+      const rowCount = rowCountFor(activeTab);
+      const contentHeight = rowCount * ROW_HEIGHT;
+      maxScroll = Math.max(0, contentHeight - VIEWPORT_HEIGHT);
+      if (scrollY > maxScroll) scrollY = maxScroll;
+      if (scrollY < 0) scrollY = 0;
+
+      if (activeTab === "weapons") renderWeapons(k, contentObjects, scrollY);
+      else if (activeTab === "enemies") renderEnemies(k, contentObjects, scrollY);
+      else if (activeTab === "items") renderItems(k, contentObjects, scrollY);
+      else renderGear(k, contentObjects, scrollY);
+
+      if (scrollHint) {
+        scrollHint.destroy();
+        scrollHint = null;
+      }
+      if (maxScroll > 0) {
+        scrollHint = k.add([
+          k.text(scrollHintText(scrollY, maxScroll), { size: 14 }),
+          k.pos(GAME_WIDTH - 40, GRID_TOP - 26),
+          k.anchor("right"),
+          k.color(160, 200, 170),
+          k.fixed(),
+          k.z(CHROME_Z),
+        ]);
+      }
     };
 
     const tabButtons: Array<{ tab: Tab; bg: GameObj; label: GameObj }> = [];
@@ -53,6 +86,7 @@ export function registerGuideScene(k: KAPLAYCtx): void {
         k.outline(1, k.rgb(140, 190, 150)),
         k.area(),
         k.fixed(),
+        k.z(CHROME_Z),
       ]);
       const text = k.add([
         k.text(label, { size: 18 }),
@@ -60,9 +94,12 @@ export function registerGuideScene(k: KAPLAYCtx): void {
         k.anchor("center"),
         k.color(200, 220, 200),
         k.fixed(),
+        k.z(CHROME_Z),
       ]);
       bg.onClick(() => {
+        if (activeTab === tab) return;
         activeTab = tab;
+        scrollY = 0;
         refreshTabs();
         renderContent();
       });
@@ -86,6 +123,22 @@ export function registerGuideScene(k: KAPLAYCtx): void {
     refreshTabs();
     renderContent();
 
+    // Cover strips so scrolled cards don't poke into the header / back-button areas.
+    k.add([
+      k.rect(GAME_WIDTH, GRID_TOP),
+      k.pos(0, 0),
+      k.color(12, 24, 18),
+      k.fixed(),
+      k.z(CHROME_Z - 1),
+    ]);
+    k.add([
+      k.rect(GAME_WIDTH, GAME_HEIGHT - VIEWPORT_BOTTOM),
+      k.pos(0, VIEWPORT_BOTTOM),
+      k.color(12, 24, 18),
+      k.fixed(),
+      k.z(CHROME_Z - 1),
+    ]);
+
     const backBtn = k.add([
       k.rect(220, 52, { radius: 8 }),
       k.color(44, 90, 66),
@@ -93,6 +146,7 @@ export function registerGuideScene(k: KAPLAYCtx): void {
       k.pos(60, GAME_HEIGHT - 80),
       k.area(),
       k.fixed(),
+      k.z(CHROME_Z),
     ]);
     k.add([
       k.text("Back (Esc)", { size: 22 }),
@@ -100,22 +154,53 @@ export function registerGuideScene(k: KAPLAYCtx): void {
       k.anchor("center"),
       k.pos(60 + 110, GAME_HEIGHT - 80 + 26),
       k.fixed(),
+      k.z(CHROME_Z),
     ]);
     backBtn.onClick(() => k.go("menu"));
     k.onKeyPress("escape", () => k.go("menu"));
     k.onKeyPress("backspace", () => k.go("menu"));
+
+    const scrollBy = (delta: number) => {
+      if (maxScroll <= 0) return;
+      const next = Math.max(0, Math.min(maxScroll, scrollY + delta));
+      if (next === scrollY) return;
+      scrollY = next;
+      renderContent();
+    };
+
+    k.onScroll((delta) => scrollBy(delta.y));
+    k.onKeyPressRepeat("down", () => scrollBy(SCROLL_KEY_STEP));
+    k.onKeyPressRepeat("up", () => scrollBy(-SCROLL_KEY_STEP));
+    k.onKeyPressRepeat("pagedown", () => scrollBy(VIEWPORT_HEIGHT));
+    k.onKeyPressRepeat("pageup", () => scrollBy(-VIEWPORT_HEIGHT));
+    k.onKeyPress("home", () => scrollBy(-maxScroll));
+    k.onKeyPress("end", () => scrollBy(maxScroll));
   });
 }
 
-const GRID_TOP = 180;
-const COL_WIDTH = 570;
-const ROW_HEIGHT = 70;
+function rowCountFor(tab: Tab): number {
+  const count =
+    tab === "weapons"
+      ? Object.values(WEAPON_DEFS).length
+      : tab === "enemies"
+        ? Object.values(ENEMY_DEFS).length
+        : tab === "items"
+          ? Object.values(ITEM_DEFS).length
+          : Object.values(GEAR_DEFS).length;
+  return Math.ceil(count / 2);
+}
 
-function renderWeapons(k: KAPLAYCtx, collect: GameObj[]): void {
+function scrollHintText(scrollY: number, maxScroll: number): string {
+  if (scrollY <= 0) return "Scroll ↓ / ↑ / PgDn — more below";
+  if (scrollY >= maxScroll) return "Scroll ↓ / ↑ / PgUp — at bottom";
+  return "Scroll ↓ / ↑ / PgDn / PgUp";
+}
+
+function renderWeapons(k: KAPLAYCtx, collect: GameObj[], scrollY: number): void {
   const defs = Object.values(WEAPON_DEFS) as WeaponDef[];
-  renderGrid(k, collect, defs.length, (col, row, index) => {
+  renderGrid(defs.length, (col, row, index) => {
     const def = defs[index];
-    drawCard(k, collect, col, row, {
+    drawCard(k, collect, col, row, scrollY, {
       sprite: def.spriteKey,
       title: def.label,
       body: def.description,
@@ -123,16 +208,16 @@ function renderWeapons(k: KAPLAYCtx, collect: GameObj[]): void {
   });
 }
 
-function renderEnemies(k: KAPLAYCtx, collect: GameObj[]): void {
+function renderEnemies(k: KAPLAYCtx, collect: GameObj[], scrollY: number): void {
   const defs = (Object.values(ENEMY_DEFS) as EnemyDef[]).filter((d) => !d.boss);
   const bosses = (Object.values(ENEMY_DEFS) as EnemyDef[]).filter((d) => d.boss);
   const ordered = [...defs, ...bosses];
-  renderGrid(k, collect, ordered.length, (col, row, index) => {
+  renderGrid(ordered.length, (col, row, index) => {
     const def = ordered[index];
     const body = def.boss
       ? `BOSS — HP ${def.hp}, DMG ${def.damage}, unlocks at wave ${def.minWave}`
       : `HP ${def.hp}, DMG ${def.damage}, unlocks at wave ${def.minWave}`;
-    drawCard(k, collect, col, row, {
+    drawCard(k, collect, col, row, scrollY, {
       sprite: def.spriteKey,
       spriteTint: def.tint,
       spriteScale: def.boss ? 1.6 : 1.2,
@@ -142,11 +227,11 @@ function renderEnemies(k: KAPLAYCtx, collect: GameObj[]): void {
   });
 }
 
-function renderItems(k: KAPLAYCtx, collect: GameObj[]): void {
+function renderItems(k: KAPLAYCtx, collect: GameObj[], scrollY: number): void {
   const defs = Object.values(ITEM_DEFS) as ItemDef[];
-  renderGrid(k, collect, defs.length, (col, row, index) => {
+  renderGrid(defs.length, (col, row, index) => {
     const def = defs[index];
-    drawCard(k, collect, col, row, {
+    drawCard(k, collect, col, row, scrollY, {
       sprite: def.spriteKey,
       title: def.label,
       body: def.pickupText,
@@ -155,11 +240,11 @@ function renderItems(k: KAPLAYCtx, collect: GameObj[]): void {
   });
 }
 
-function renderGear(k: KAPLAYCtx, collect: GameObj[]): void {
+function renderGear(k: KAPLAYCtx, collect: GameObj[], scrollY: number): void {
   const defs = Object.values(GEAR_DEFS) as GearDef[];
-  renderGrid(k, collect, defs.length, (col, row, index) => {
+  renderGrid(defs.length, (col, row, index) => {
     const def = defs[index];
-    drawCard(k, collect, col, row, {
+    drawCard(k, collect, col, row, scrollY, {
       sprite: def.spriteKey,
       title: def.label,
       body: def.description,
@@ -169,8 +254,6 @@ function renderGear(k: KAPLAYCtx, collect: GameObj[]): void {
 }
 
 function renderGrid(
-  _k: KAPLAYCtx,
-  _collect: GameObj[],
   count: number,
   draw: (col: number, row: number, index: number) => void,
 ): void {
@@ -194,10 +277,14 @@ function drawCard(
   collect: GameObj[],
   col: number,
   row: number,
+  scrollY: number,
   opts: CardOpts,
 ): void {
   const x = 40 + col * (COL_WIDTH + 30);
-  const y = GRID_TOP + row * ROW_HEIGHT;
+  const y = GRID_TOP + row * ROW_HEIGHT - scrollY;
+
+  // Cull rows fully outside the viewport to keep the scene light on large lists.
+  if (y + ROW_HEIGHT < GRID_TOP || y > VIEWPORT_BOTTOM) return;
 
   const bg = k.add([
     k.rect(COL_WIDTH, ROW_HEIGHT - 8, { radius: 8 }),
