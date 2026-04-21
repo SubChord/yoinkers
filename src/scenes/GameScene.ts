@@ -13,6 +13,17 @@ import { createPlayer, updatePlayer, type Player } from "../entities/Player";
 import { scatterScenery } from "../entities/Scenery";
 import { updateGem, spawnXpGem, type XpGem } from "../entities/XpGem";
 import { playDeathAnim, type Enemy } from "../entities/Enemy";
+import {
+  absorbEnemies,
+  checkBossTouchDamage,
+  checkLandingDamage,
+  checkLavaPoolDamage,
+  killSuperBoss,
+  spawnSuperBoss,
+  SUPER_BOSS_XP,
+  updateSuperBoss,
+  type SuperBoss,
+} from "../entities/SuperBoss";
 import { ChestSystem } from "../systems/ChestSystem";
 import { EnemySpawner } from "../systems/EnemySpawner";
 import { GearSystem } from "../systems/GearSystem";
@@ -29,6 +40,7 @@ import { burstVfx, impactVfx } from "../systems/PickupVfx";
 import { QuestSystem } from "../systems/QuestSystem";
 import { currentMetaBonuses, loadSave, persistRun } from "../systems/SaveStore";
 import { StatsTracker } from "../systems/StatsTracker";
+import { WallHazardSystem } from "../systems/WallHazard";
 import { WeaponSystem } from "../systems/WeaponSystem";
 import { applyUpgrade, pickUpgradeChoices } from "../systems/UpgradeSystem";
 import { mountDamageOverlay } from "../ui/DamageOverlay";
@@ -118,6 +130,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     music.selectTrack(mapDef.defaultTrackId);
     mountMusicSelector(k, music);
     const damageFlash = mountDamageOverlay(k);
+    const wallHazard = new WallHazardSystem(k, player, (key) => playSfx(k, key), damageFlash);
     const mobileControls: MobileControls | null = isTouchDevice() ? mountMobileControls(k) : null;
 
     interface GameState {
@@ -130,6 +143,8 @@ export function registerGameScene(k: KAPLAYCtx): void {
       pausedAtMs: number | undefined;
       levelQueue: number;
       activeMenu: UpgradeMenu | null;
+      superBoss: SuperBoss | null;
+      superBossTriggered: boolean;
     }
 
     const state: GameState = {
@@ -142,6 +157,8 @@ export function registerGameScene(k: KAPLAYCtx): void {
       pausedAtMs: undefined,
       levelQueue: 0,
       activeMenu: null,
+      superBoss: null,
+      superBossTriggered: false,
     };
 
     for (let i = 0; i < pendingStartLevels; i += 1) {
@@ -276,6 +293,23 @@ export function registerGameScene(k: KAPLAYCtx): void {
         state.waveStartedMs = nowMs;
         spawner.spawnWave(state.wave);
         quests.onWave(state.wave);
+
+        // Trigger super boss at wave 15
+        if (state.wave === 15 && !state.superBossTriggered) {
+          state.superBossTriggered = true;
+          state.paused = true;
+          spawner.spawningDisabled = true;
+          const boss = spawnSuperBoss(k, player);
+          state.superBoss = boss;
+          weapons.superBoss = boss;
+
+          // Absorb all existing enemies into the boss
+          const toAbsorb = [...spawner.enemies];
+          spawner.enemies = [];
+          absorbEnemies(k, boss, toAbsorb, () => {
+            state.paused = false;
+          });
+        }
       }
 
       updatePlayer(k, player, dt);
@@ -490,8 +524,34 @@ export function registerGameScene(k: KAPLAYCtx): void {
       chests.update(nowMs, dt);
       items.update(nowMs, dt);
       gear.update(nowMs, dt);
+      wallHazard.update(nowMs, dt, state.wave);
 
       handleEnemyTouchPlayer(k, player, spawner, nowMs, damageFlash);
+
+      // Super boss update
+      if (state.superBoss && state.superBoss.phase !== "dead") {
+        const bossResult = updateSuperBoss(k, state.superBoss, player, dt, nowMs);
+
+        if (bossResult.landed) {
+          checkLandingDamage(k, state.superBoss, player, bossResult.landX, bossResult.landY, nowMs, damageFlash);
+          playSfx(k, "sfx-hit");
+        }
+
+        checkBossTouchDamage(k, state.superBoss, player, nowMs, damageFlash);
+        checkLavaPoolDamage(k, state.superBoss, player, nowMs, damageFlash);
+
+        // Check if boss is dead
+        if (state.superBoss.hp <= 0) {
+          killSuperBoss(k, state.superBoss);
+          playSfx(k, "sfx-yoink");
+          playSfx(k, "sfx-levelup");
+          // Grant XP and resume normal spawning
+          player.stats.xp += SUPER_BOSS_XP;
+          state.enemiesKilled += 1;
+          spawner.spawningDisabled = false;
+          weapons.superBoss = null;
+        }
+      }
       collectGems(k, gems, player, dt, quests);
 
       maybeLevelUp(player, state, quests);

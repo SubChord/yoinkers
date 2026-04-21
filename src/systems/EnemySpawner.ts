@@ -22,6 +22,7 @@ const MAX_LEAPERS = 4;
 export class EnemySpawner {
   public enemies: Enemy[] = [];
   public explodingLeapers: Enemy[] = [];
+  public spawningDisabled = false;
   private wave = 1;
   private lastStreamMs = 0;
 
@@ -29,6 +30,7 @@ export class EnemySpawner {
 
   public spawnWave(waveIndex: number): void {
     this.wave = waveIndex;
+    if (this.spawningDisabled) return;
     const count = ENEMY_WAVE_BASE_COUNT + waveIndex * ENEMY_WAVE_GROWTH;
     const pool = availableEnemiesForWave(waveIndex);
     const waveScale = waveScaleFactor(waveIndex);
@@ -66,6 +68,7 @@ export class EnemySpawner {
   }
 
   private streamEnemies(): void {
+    if (this.spawningDisabled) return;
     const pool = availableEnemiesForWave(this.wave);
     const lateExtra = this.wave > 20 ? Math.floor((this.wave - 20) / 3) : 0;
     const count = 2 + Math.floor(this.wave / 3) + lateExtra;

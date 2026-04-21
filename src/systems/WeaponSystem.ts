@@ -27,8 +27,11 @@ interface WeaponState {
   lastFireMs: number;
 }
 
+import type { SuperBoss } from "../entities/SuperBoss";
+
 export class WeaponSystem {
   public projectiles: Projectile[] = [];
+  public superBoss: SuperBoss | null = null;
   private weaponStates: Map<WeaponId, WeaponState> = new Map();
   private lastFireDropX = 0;
   private lastFireDropY = 0;
@@ -609,6 +612,7 @@ export class WeaponSystem {
       if (p.kind === "orbit") {
         this.updateOrbit(p, dt);
         this.checkPersistentHits(p, nowMs, MAGIC_ORB_HIT_COOLDOWN_MS);
+        this.checkBossHit(p);
         continue;
       }
 
@@ -617,9 +621,11 @@ export class WeaponSystem {
         if (p.weapon === "samuraiSword") {
           this.updateSamuraiSlash(p);
           this.checkSamuraiSlashHits(p);
+          this.checkBossHit(p);
         } else {
           const cooldown = p.weapon === "fireTrail" ? FIRE_TRAIL_HIT_COOLDOWN_MS : CALTROP_HIT_COOLDOWN_MS;
           this.checkPersistentHits(p, nowMs, cooldown);
+          this.checkBossHit(p);
         }
 
         if (p.weapon === "fireTrail") {
@@ -662,6 +668,7 @@ export class WeaponSystem {
 
       if (p.kind === "pierce") {
         this.handlePierceHits(p, nowMs);
+        this.checkBossHit(p);
         if (p.piercesLeft <= 0 || p.distance >= p.maxRange) {
           p.obj.destroy();
           this.projectiles.splice(i, 1);
@@ -680,6 +687,8 @@ export class WeaponSystem {
         if (p.kind === "boomerang") {
           p.returning = true;
         }
+      } else {
+        this.checkBossHit(p);
       }
 
       if (p.kind === "linear" && p.distance >= p.maxRange) {
@@ -780,6 +789,7 @@ export class WeaponSystem {
       if (dx * dx + dy * dy > p.area * p.area) continue;
       this.applyHit(p, i);
     }
+    this.checkBossHit(p);
   }
 
   private updateBomb(p: Projectile, dt: number): void {
@@ -824,6 +834,27 @@ export class WeaponSystem {
       if (dx * dx + dy * dy <= range * range) return j;
     }
     return -1;
+  }
+
+  /** Check if a projectile hits the super boss and apply damage. */
+  private checkBossHit(p: Projectile): void {
+    const boss = this.superBoss;
+    if (!boss || boss.phase === "dead" || boss.phase === "airborne") return;
+    const range = p.area + 56;
+    const dx = boss.obj.pos.x - p.obj.pos.x;
+    const dy = boss.obj.pos.y - p.obj.pos.y;
+    if (dx * dx + dy * dy <= range * range) {
+      const bonus = this.player.stats.damageMult * this.player.stats.damageBuffMult;
+      const dmg = Math.floor(p.damage * bonus);
+      boss.hp -= dmg;
+      this.stats.record(p.weapon, dmg);
+      this.onDamageDealt(dmg);
+      impactVfx(this.k, {
+        x: boss.obj.pos.x, y: boss.obj.pos.y,
+        color: WEAPON_HIT_COLORS[p.weapon] ?? [255, 255, 255],
+      });
+      this.onEnemyHit();
+    }
   }
 }
 
