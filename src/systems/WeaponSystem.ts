@@ -25,6 +25,7 @@ export class WeaponSystem {
     private onEnemyDeath: (enemy: Enemy, index: number) => void,
     private onEnemyHit: () => void,
     private stats: StatsTracker,
+    private onDamageDealt: (amount: number) => void = () => {},
   ) {}
 
   public update(nowMs: number, dt: number): void {
@@ -362,6 +363,7 @@ export class WeaponSystem {
     const damage = Math.min(enemy.hp, p.damage);
     enemy.hp -= p.damage;
     this.stats.record(p.weapon, damage);
+    this.onDamageDealt(damage);
     if (enemy.hp <= 0) {
       this.onEnemyDeath(enemy, enemyIndex);
     } else {

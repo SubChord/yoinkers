@@ -21,6 +21,7 @@ export class ItemSystem {
     private player: Player,
     private spawner: EnemySpawner,
     private onPlaySfx: (key: string) => void,
+    private onPickup: () => void = () => {},
   ) {
     this.nextWorldSpawnAt = Date.now() + 6_000;
   }
@@ -76,6 +77,7 @@ export class ItemSystem {
 
   private applyEffect(def: ItemDef, x: number, y: number): void {
     this.onPlaySfx("sfx-gem");
+    this.onPickup();
     this.showPickupLabel(x, y, def);
 
     const now = Date.now();

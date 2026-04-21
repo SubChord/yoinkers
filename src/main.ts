@@ -1,5 +1,6 @@
 import kaplay from "kaplay";
 import { GAME_HEIGHT, GAME_WIDTH } from "./config/GameConfig";
+import { GEAR_DEFS } from "./config/GearDefs";
 import { ITEM_DEFS } from "./config/ItemDefs";
 import { MUSIC_TRACKS } from "./config/MusicDefs";
 import { registerEndScene } from "./scenes/EndScene";
@@ -71,6 +72,10 @@ for (const enemy of ENEMY_SPRITES) {
 }
 
 k.loadSprite("gem", "assets/Items/Collectibles/gem.png");
+k.loadSprite("gem-small", "assets/Items/Gems/green.png");
+k.loadSprite("gem-medium", "assets/Items/Gems/purple.png");
+k.loadSprite("gem-large", "assets/Items/Gems/red.png");
+k.loadSprite("gem-huge", "assets/Items/Gems/yellow.png");
 k.loadSprite("shuriken", "assets/Items/Weapon/shuriken-icon.png");
 k.loadSprite("magic-orb", "assets/Items/Weapon/magic-orb-blue.png", {
   sliceX: 5,
@@ -88,6 +93,11 @@ k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
 
 for (const item of Object.values(ITEM_DEFS)) {
   k.loadSprite(item.spriteKey, `assets/Items/Consumables/${item.id}.png`);
+}
+
+for (const gearId of Object.keys(GEAR_DEFS)) {
+  const def = GEAR_DEFS[gearId as keyof typeof GEAR_DEFS];
+  k.loadSprite(def.spriteKey, `assets/Items/Gear/${gearId}.png`);
 }
 
 for (const track of MUSIC_TRACKS) {

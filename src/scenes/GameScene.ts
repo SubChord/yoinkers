@@ -11,12 +11,15 @@ import { scatterScenery } from "../entities/Scenery";
 import { updateGem, spawnXpGem, type XpGem } from "../entities/XpGem";
 import { ChestSystem } from "../systems/ChestSystem";
 import { EnemySpawner } from "../systems/EnemySpawner";
+import { GearSystem } from "../systems/GearSystem";
 import { ItemSystem } from "../systems/ItemSystem";
 import { MusicSystem } from "../systems/MusicSystem";
+import { QuestSystem } from "../systems/QuestSystem";
 import { persistRun } from "../systems/SaveStore";
 import { StatsTracker } from "../systems/StatsTracker";
 import { WeaponSystem } from "../systems/WeaponSystem";
 import { applyUpgrade, pickUpgradeChoices } from "../systems/UpgradeSystem";
+import { mountDamageOverlay } from "../ui/DamageOverlay";
 import { createHud, updateHud } from "../ui/HUD";
 import { mountMusicSelector } from "../ui/MusicSelector";
 import { showUpgradeMenu, type UpgradeMenu } from "../ui/UpgradeMenu";
@@ -28,8 +31,10 @@ export function registerGameScene(k: KAPLAYCtx): void {
     const player = createPlayer(k);
     const spawner = new EnemySpawner(k, player);
     const gems: XpGem[] = [];
-    const items = new ItemSystem(k, player, spawner, (key) => playSfx(k, key));
     const tracker = new StatsTracker();
+    const quests = new QuestSystem(k, player, (key) => playSfx(k, key));
+    const gear = new GearSystem(k, player, (key) => playSfx(k, key));
+    const items = new ItemSystem(k, player, spawner, (key) => playSfx(k, key), () => quests.onItem());
 
     const weapons = new WeaponSystem(
       k,
@@ -38,6 +43,8 @@ export function registerGameScene(k: KAPLAYCtx): void {
       (enemy, index) => {
         gems.push(spawnXpGem(k, enemy.obj.pos.x, enemy.obj.pos.y, enemy.xpValue));
         items.onEnemyKilled(enemy, enemy.isElite);
+        gear.onEnemyKilled(enemy);
+        quests.onKill(enemy.isElite, enemy.isBoss);
         enemy.obj.destroy();
         spawner.removeAt(index);
         state.enemiesKilled += 1;
@@ -45,13 +52,20 @@ export function registerGameScene(k: KAPLAYCtx): void {
       },
       () => playSfx(k, "sfx-hit"),
       tracker,
+      (amount) => quests.onDamage(amount),
     );
 
-    const chests = new ChestSystem(k, player, (key) => playSfx(k, key));
+    const chests = new ChestSystem(
+      k,
+      player,
+      (key) => playSfx(k, key),
+      () => quests.onChest(),
+    );
     const hud = createHud(k);
     const music = new MusicSystem(k);
     music.start();
     mountMusicSelector(k, music);
+    const damageFlash = mountDamageOverlay(k);
 
     interface GameState {
       startMs: number;
@@ -74,6 +88,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     };
 
     spawner.spawnWave(state.wave);
+    quests.onWave(state.wave);
 
     const openUpgradeMenuIfQueued = () => {
       if (state.paused || state.levelQueue <= 0) return;
@@ -117,6 +132,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
         state.wave += 1;
         state.waveStartedMs = nowMs;
         spawner.spawnWave(state.wave);
+        quests.onWave(state.wave);
       }
 
       updatePlayer(k, player, dt);
@@ -124,11 +140,12 @@ export function registerGameScene(k: KAPLAYCtx): void {
       weapons.update(nowMs, dt);
       chests.update(nowMs, dt);
       items.update(nowMs, dt);
+      gear.update(nowMs, dt);
 
-      handleEnemyTouchPlayer(k, player, spawner, nowMs);
-      collectGems(gems, player, dt);
+      handleEnemyTouchPlayer(k, player, spawner, nowMs, damageFlash);
+      collectGems(gems, player, dt, quests);
 
-      maybeLevelUp(player, state);
+      maybeLevelUp(player, state, quests);
 
       updateHud(hud, {
         player,
@@ -162,6 +179,7 @@ function handleEnemyTouchPlayer(
   player: Player,
   spawner: EnemySpawner,
   nowMs: number,
+  damageFlash: { flash: () => void },
 ): void {
   if (nowMs - player.lastHitMs < PLAYER_IFRAME_MS) return;
 
@@ -173,15 +191,22 @@ function handleEnemyTouchPlayer(
       player.lastHitMs = nowMs;
       player.stats.hp = Math.max(0, player.stats.hp - enemy.damage);
       playSfx(k, "sfx-hit");
+      damageFlash.flash();
       k.shake(4);
       return;
     }
   }
 }
 
-function collectGems(gems: XpGem[], player: Player, dt: number): void {
+function collectGems(
+  gems: XpGem[],
+  player: Player,
+  dt: number,
+  quests: QuestSystem,
+): void {
   for (let i = gems.length - 1; i >= 0; i -= 1) {
     if (updateGem(gems[i], player, dt) === "collected") {
+      quests.onGem();
       gems.splice(i, 1);
     }
   }
@@ -190,6 +215,7 @@ function collectGems(gems: XpGem[], player: Player, dt: number): void {
 function maybeLevelUp(
   player: Player,
   state: { levelQueue: number },
+  quests: QuestSystem,
 ): void {
   let threshold = XP_PER_LEVEL[Math.min(player.stats.level, XP_PER_LEVEL.length - 1)];
   while (player.stats.xp >= threshold) {
@@ -198,6 +224,7 @@ function maybeLevelUp(
     player.stats.maxHp += 5;
     player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + 5);
     state.levelQueue += 1;
+    quests.onLevel(player.stats.level);
     threshold = XP_PER_LEVEL[Math.min(player.stats.level, XP_PER_LEVEL.length - 1)];
   }
 }

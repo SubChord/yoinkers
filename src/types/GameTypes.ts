@@ -1,3 +1,4 @@
+import type { GearId } from "../config/GearDefs";
 import type { WeaponId } from "../config/WeaponDefs";
 
 export type Facing = "down" | "up" | "left" | "right";
@@ -12,12 +13,14 @@ export interface PlayerStats {
   magnetMult: number;
   damageMult: number;
   cooldownMult: number;
+  xpMult: number;
   damageBuffMult: number;
   speedBuffMult: number;
   damageBuffExpiresMs: number;
   speedBuffExpiresMs: number;
   weapons: WeaponId[];
   upgrades: Record<string, number>;
+  gear: Partial<Record<GearId, number>>;
 }
 
 export interface EndStats {

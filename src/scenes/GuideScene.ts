@@ -1,10 +1,11 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/GameConfig";
 import { ENEMY_DEFS, type EnemyDef, type EnemyId } from "../config/EnemyDefs";
+import { GEAR_DEFS, type GearDef } from "../config/GearDefs";
 import { ITEM_DEFS, type ItemDef } from "../config/ItemDefs";
 import { WEAPON_DEFS, type WeaponDef } from "../config/WeaponDefs";
 
-type Tab = "weapons" | "enemies" | "items";
+type Tab = "weapons" | "enemies" | "items" | "gear";
 
 export function registerGuideScene(k: KAPLAYCtx): void {
   k.scene("guide", () => {
@@ -26,7 +27,8 @@ export function registerGuideScene(k: KAPLAYCtx): void {
       contentObjects = [];
       if (activeTab === "weapons") renderWeapons(k, contentObjects);
       else if (activeTab === "enemies") renderEnemies(k, contentObjects);
-      else renderItems(k, contentObjects);
+      else if (activeTab === "items") renderItems(k, contentObjects);
+      else renderGear(k, contentObjects);
     };
 
     const tabButtons: Array<{ tab: Tab; bg: GameObj; label: GameObj }> = [];
@@ -67,10 +69,19 @@ export function registerGuideScene(k: KAPLAYCtx): void {
       tabButtons.push({ tab, bg, label: text });
     };
 
-    const tabStartX = GAME_WIDTH / 2 - 250;
-    makeTab("weapons", "Weapons", tabStartX);
-    makeTab("enemies", "Enemies", tabStartX + 170);
-    makeTab("items", "Items", tabStartX + 340);
+    const tabWidth = 150;
+    const tabGap = 14;
+    const tabs: Array<[Tab, string]> = [
+      ["weapons", "Weapons"],
+      ["enemies", "Enemies"],
+      ["items", "Items"],
+      ["gear", "Gear"],
+    ];
+    const totalTabsWidth = tabs.length * tabWidth + (tabs.length - 1) * tabGap;
+    const tabStartX = (GAME_WIDTH - totalTabsWidth) / 2;
+    tabs.forEach(([tab, label], i) => {
+      makeTab(tab, label, tabStartX + i * (tabWidth + tabGap));
+    });
 
     refreshTabs();
     renderContent();
@@ -139,6 +150,19 @@ function renderItems(k: KAPLAYCtx, collect: GameObj[]): void {
       sprite: def.spriteKey,
       title: def.label,
       body: def.pickupText,
+      spriteScale: 2.2,
+    });
+  });
+}
+
+function renderGear(k: KAPLAYCtx, collect: GameObj[]): void {
+  const defs = Object.values(GEAR_DEFS) as GearDef[];
+  renderGrid(k, collect, defs.length, (col, row, index) => {
+    const def = defs[index];
+    drawCard(k, collect, col, row, {
+      sprite: def.spriteKey,
+      title: def.label,
+      body: def.description,
       spriteScale: 2.2,
     });
   });

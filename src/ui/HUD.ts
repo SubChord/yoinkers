@@ -1,6 +1,13 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
 import { GAME_WIDTH, SCORE_WAVE_MULTIPLIER, XP_PER_LEVEL } from "../config/GameConfig";
+import { GEAR_DEFS, GEAR_IDS, type GearId } from "../config/GearDefs";
 import type { Player } from "../entities/Player";
+
+interface GearIconRef {
+  id: GearId;
+  sprite: GameObj;
+  count: GameObj;
+}
 
 export interface HudRefs {
   k: KAPLAYCtx;
@@ -10,6 +17,7 @@ export interface HudRefs {
   timerText: GameObj;
   scoreText: GameObj;
   weaponsText: GameObj;
+  gearIcons: Map<GearId, GearIconRef>;
 }
 
 export function createHud(k: KAPLAYCtx): HudRefs {
@@ -32,7 +40,28 @@ export function createHud(k: KAPLAYCtx): HudRefs {
     k.z(100),
   ]);
 
-  return { k, hpText, xpText, waveText, timerText, scoreText, weaponsText };
+  const gearIcons = new Map<GearId, GearIconRef>();
+  GEAR_IDS.forEach((id, index) => {
+    const x = 20 + index * 44;
+    const sprite = k.add([
+      k.sprite(GEAR_DEFS[id].spriteKey),
+      k.pos(x, 114),
+      k.scale(2),
+      k.opacity(0.15),
+      k.fixed(),
+      k.z(100),
+    ]);
+    const count = k.add([
+      k.text("", { size: 12 }),
+      k.pos(x + 28, 134),
+      k.color(255, 236, 160),
+      k.fixed(),
+      k.z(101),
+    ]);
+    gearIcons.set(id, { id, sprite, count });
+  });
+
+  return { k, hpText, xpText, waveText, timerText, scoreText, weaponsText, gearIcons };
 }
 
 export interface HudState {
@@ -63,6 +92,12 @@ export function updateHud(refs: HudRefs, state: HudState): void {
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
   setText(refs.timerText, `${mm}:${ss}`);
+
+  for (const icon of refs.gearIcons.values()) {
+    const count = s.gear[icon.id] ?? 0;
+    (icon.sprite as unknown as { opacity: number }).opacity = count > 0 ? 1 : 0.15;
+    setText(icon.count, count > 1 ? `x${count}` : count === 1 ? "" : "");
+  }
 }
 
 function setText(obj: GameObj, value: string): void {
@@ -77,6 +112,12 @@ function prettyWeapon(id: string): string {
       return "Magic Orb";
     case "boomerang":
       return "Kunai";
+    case "arrow":
+      return "Arrow Volley";
+    case "bomb":
+      return "Bomb";
+    case "caltrop":
+      return "Caltrops";
     default:
       return id;
   }

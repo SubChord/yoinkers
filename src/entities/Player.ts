@@ -29,12 +29,14 @@ export function createPlayer(k: KAPLAYCtx): Player {
     magnetMult: 1,
     damageMult: 1,
     cooldownMult: 1,
+    xpMult: 1,
     damageBuffMult: 1,
     speedBuffMult: 1,
     damageBuffExpiresMs: 0,
     speedBuffExpiresMs: 0,
     weapons: ["shuriken"],
     upgrades: {},
+    gear: {},
   };
 
   return {

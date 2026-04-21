@@ -17,6 +17,7 @@ export class ChestSystem {
     private k: KAPLAYCtx,
     private player: Player,
     private onPlaySfx: (key: string) => void,
+    private onOpen: () => void = () => {},
   ) {
     this.nextSpawnAt = Date.now() + 4_000;
   }
@@ -34,6 +35,7 @@ export class ChestSystem {
         applyLoot(this.player, loot);
         this.showLootPopup(chest.obj.pos.x, chest.obj.pos.y, loot);
         this.onPlaySfx("sfx-gem");
+        this.onOpen();
         this.k.wait(0.3, () => {
           chest.obj.destroy();
         });

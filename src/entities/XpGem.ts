@@ -2,20 +2,49 @@ import type { KAPLAYCtx, GameObj } from "kaplay";
 import { BASE_GEM_MAGNET_RANGE, BASE_PICKUP_RANGE } from "../config/GameConfig";
 import type { Player } from "./Player";
 
+export type GemTier = "small" | "medium" | "large" | "huge";
+
 export interface XpGem {
   obj: GameObj;
   xpValue: number;
+  tier: GemTier;
 }
 
-export function spawnXpGem(k: KAPLAYCtx, x: number, y: number, xpValue: number): XpGem {
+interface TierConfig {
+  sprite: string;
+  scale: number;
+}
+
+const TIER_CONFIG: Record<GemTier, TierConfig> = {
+  small: { sprite: "gem-small", scale: 1.5 },
+  medium: { sprite: "gem-medium", scale: 1.9 },
+  large: { sprite: "gem-large", scale: 2.2 },
+  huge: { sprite: "gem-huge", scale: 2.6 },
+};
+
+export function tierFor(xpValue: number): GemTier {
+  if (xpValue >= 60) return "huge";
+  if (xpValue >= 18) return "large";
+  if (xpValue >= 9) return "medium";
+  return "small";
+}
+
+export function spawnXpGem(
+  k: KAPLAYCtx,
+  x: number,
+  y: number,
+  xpValue: number,
+): XpGem {
+  const tier = tierFor(xpValue);
+  const cfg = TIER_CONFIG[tier];
   const obj = k.add([
-    k.sprite("gem"),
+    k.sprite(cfg.sprite),
     k.pos(x, y),
     k.anchor("center"),
-    k.scale(2),
+    k.scale(cfg.scale),
     k.z(3),
   ]);
-  return { obj, xpValue };
+  return { obj, xpValue, tier };
 }
 
 export function updateGem(
@@ -36,7 +65,7 @@ export function updateGem(
   }
 
   if (dist < BASE_PICKUP_RANGE) {
-    player.stats.xp += gem.xpValue;
+    player.stats.xp += gem.xpValue * player.stats.xpMult;
     gem.obj.destroy();
     return "collected";
   }
