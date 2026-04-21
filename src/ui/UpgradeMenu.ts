@@ -21,6 +21,17 @@ const CARD_SPACING = 40;
 
 export function showUpgradeMenu(k: KAPLAYCtx, opts: UpgradeMenuOpts): UpgradeMenu {
   const created: GameObj[] = [];
+  // Overlay buttons that sit ON TOP of a card (banish). KAPLAY fires onClick
+  // on every overlapping area() in the scene, so the card's select handler
+  // needs to skip when the cursor is hovering one of these.
+  const overlayButtons: GameObj[] = [];
+
+  const cursorOverOverlay = (): boolean => {
+    for (const btn of overlayButtons) {
+      if ((btn as unknown as { isHovering: () => boolean }).isHovering()) return true;
+    }
+    return false;
+  };
 
   const add = <T extends GameObj>(obj: T): T => {
     created.push(obj);
@@ -143,6 +154,9 @@ export function showUpgradeMenu(k: KAPLAYCtx, opts: UpgradeMenuOpts): UpgradeMen
     );
 
     const chooseThis = () => {
+      // Block the click from reaching the card when the user is actually
+      // clicking the banish button that sits on top of it.
+      if (cursorOverOverlay()) return;
       opts.onChoose(choice);
     };
 
@@ -166,12 +180,13 @@ export function showUpgradeMenu(k: KAPLAYCtx, opts: UpgradeMenuOpts): UpgradeMen
 
     // Per-card banish button — only shown when the caller supplies a handler and the player has banishes left.
     if (opts.onBanish && (opts.banishesLeft ?? 0) > 0) {
+      const banY = startY + CARD_HEIGHT - 34;
       const banBtn = add(
         k.add([
           k.rect(CARD_WIDTH - 60, 28, { radius: 6 }),
           k.color(90, 40, 40),
           k.outline(1, k.rgb(220, 150, 150)),
-          k.pos(cx + 30, startY + CARD_HEIGHT - 34),
+          k.pos(cx + 30, banY),
           k.area(),
           k.fixed(),
           k.z(503),
@@ -182,12 +197,13 @@ export function showUpgradeMenu(k: KAPLAYCtx, opts: UpgradeMenuOpts): UpgradeMen
           k.text(`Banish (${opts.banishesLeft} left)`, { size: 14 }),
           k.color(255, 220, 220),
           k.anchor("center"),
-          k.pos(centerX, startY + CARD_HEIGHT - 34 + 14),
+          k.pos(centerX, banY + 14),
           k.fixed(),
           k.z(504),
         ]),
       );
       banBtn.onClick(() => opts.onBanish?.(choice));
+      overlayButtons.push(banBtn);
     }
   });
 

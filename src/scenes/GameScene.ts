@@ -311,7 +311,10 @@ export function registerGameScene(k: KAPLAYCtx): void {
           player.stats.rerollsRemaining -= 1;
           state.activeMenu?.destroy();
           state.activeMenu = null;
-          showNextUpgradeMenu();
+          // Defer the rebuild: KAPLAY dispatches the current click to every
+          // overlapping `area()` object this frame, so a synchronous rebuild
+          // would let the same press drain additional charges via the new menu.
+          setTimeout(showNextUpgradeMenu, 0);
         },
         onBanish: (choice) => {
           if (player.stats.banishesRemaining <= 0) return;
@@ -319,7 +322,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
           player.stats.bannedUpgrades.push(choice.id);
           state.activeMenu?.destroy();
           state.activeMenu = null;
-          showNextUpgradeMenu();
+          setTimeout(showNextUpgradeMenu, 0);
         },
       });
     };
