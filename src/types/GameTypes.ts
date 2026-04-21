@@ -5,6 +5,8 @@ export type Facing = "down" | "up" | "left" | "right";
 
 export type ActiveItemId = "redBull" | "novaBlast";
 
+export type CharacterId = "ninja" | "jesus";
+
 export interface PlayerStats {
   hp: number;
   maxHp: number;

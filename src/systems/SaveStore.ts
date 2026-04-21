@@ -6,7 +6,7 @@ import {
   type MetaBonuses,
   type MetaUpgradeId,
 } from "../config/MetaUpgradeDefs";
-import type { EndStats } from "../types/GameTypes";
+import type { CharacterId, EndStats } from "../types/GameTypes";
 
 const STORAGE_KEY = "yoinkers.save.v2";
 
@@ -29,6 +29,7 @@ export interface SaveData {
   lifetimeYoinks: number;
   metaUpgrades: Partial<Record<MetaUpgradeId, number>>;
   lastYoinksEarned: number;
+  selectedCharacter: CharacterId;
 }
 
 const EMPTY_SAVE: SaveData = {
@@ -50,6 +51,7 @@ const EMPTY_SAVE: SaveData = {
   lifetimeYoinks: 0,
   metaUpgrades: {},
   lastYoinksEarned: 0,
+  selectedCharacter: "ninja",
 };
 
 export function loadSave(): SaveData {
@@ -68,6 +70,7 @@ export function loadSave(): SaveData {
       lifetimeYoinks: Math.max(0, Math.floor(parsed.lifetimeYoinks ?? 0)),
       metaUpgrades: sanitizeMetaUpgrades(parsed.metaUpgrades),
       lastYoinksEarned: Math.max(0, Math.floor(parsed.lastYoinksEarned ?? 0)),
+      selectedCharacter: sanitizeCharacter(parsed.selectedCharacter, parsed.metaUpgrades),
     };
   } catch {
     return cloneEmpty();
@@ -180,6 +183,23 @@ export function setLastMap(mapId: MapId): void {
   }
 }
 
+export function setSelectedCharacter(id: CharacterId): void {
+  const current = loadSave();
+  if (!isCharacterUnlocked(current, id)) return;
+  current.selectedCharacter = id;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+  } catch {
+    // ignore
+  }
+}
+
+export function isCharacterUnlocked(save: SaveData, id: CharacterId): boolean {
+  if (id === "ninja") return true;
+  if (id === "jesus") return (save.metaUpgrades["unlock-jesus"] ?? 0) >= 1;
+  return false;
+}
+
 export function resetSave(): SaveData {
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -243,4 +263,12 @@ function sanitizeMaps(value: MapId[] | undefined, fallback: MapId[]): MapId[] {
 
 function sanitizeMapId(value: MapId | undefined, fallback: MapId): MapId {
   return value && MAP_ORDER.includes(value) ? value : fallback;
+}
+
+function sanitizeCharacter(
+  value: CharacterId | undefined,
+  metaUpgrades: Partial<Record<MetaUpgradeId, number>> | undefined,
+): CharacterId {
+  if (value === "jesus" && (metaUpgrades?.["unlock-jesus"] ?? 0) >= 1) return "jesus";
+  return "ninja";
 }

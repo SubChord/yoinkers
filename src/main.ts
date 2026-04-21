@@ -1,4 +1,9 @@
 import kaplay from "kaplay";
+import {
+  buildHolyBeamDataURL,
+  buildHolyWaterDataURL,
+  buildJesusWalkDataURL,
+} from "./assets/SpriteGen";
 import { GAME_HEIGHT, GAME_WIDTH } from "./config/GameConfig";
 import { GEAR_DEFS } from "./config/GearDefs";
 import { ITEM_DEFS } from "./config/ItemDefs";
@@ -51,6 +56,12 @@ k.loadSprite("player-walk", "assets/Actor/Characters/NinjaGirl/Walk.png", {
   anims: PLAYER_ANIMS,
 });
 
+k.loadSprite("jesus-walk", buildJesusWalkDataURL(), {
+  sliceX: 4,
+  sliceY: 4,
+  anims: PLAYER_ANIMS,
+});
+
 const ENEMY_SPRITES: Array<{ key: string; path: string }> = [
   { key: "enemy-slime", path: "assets/Actor/Monster/Slime/SpriteSheet.png" },
   { key: "enemy-skel", path: "assets/Actor/Monster/SkullBlue/SpriteSheet.png" },
@@ -93,6 +104,8 @@ k.loadSprite("weapon-caltrop", "assets/Items/Weapon/caltrop.png");
 k.loadSprite("weapon-katana", "assets/Items/Weapon/katana.png");
 k.loadSprite("fire-trail", "assets/Items/Weapon/fire-trail.png");
 k.loadSprite("fire-ground", "assets/Items/Weapon/fire-ground.png");
+k.loadSprite("holy-beam", buildHolyBeamDataURL());
+k.loadSprite("holy-water", buildHolyWaterDataURL());
 k.loadSprite("chest", "assets/Items/Treasure/chest.png", { sliceX: 2, sliceY: 1 });
 k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
 k.loadSprite("item-redbull", "assets/Items/Consumables/redbull.png");

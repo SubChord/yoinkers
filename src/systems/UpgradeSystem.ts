@@ -2,6 +2,7 @@ import { UPGRADE_DEFS, type UpgradeDef } from "../config/UpgradeDefs";
 import type { Player } from "../entities/Player";
 
 const CHOICE_COUNT = 3;
+const MAX_WEAPONS = 5;
 
 export function pickUpgradeChoices(
   player: Player,
@@ -27,7 +28,8 @@ function isAvailable(def: UpgradeDef, player: Player): boolean {
 
   if (def.kind === "weapon-unlock") {
     if (!def.weapon) return false;
-    return !player.stats.weapons.includes(def.weapon);
+    if (player.stats.weapons.includes(def.weapon)) return false;
+    return player.stats.weapons.length < MAX_WEAPONS;
   }
 
   if (def.kind === "weapon-upgrade") {

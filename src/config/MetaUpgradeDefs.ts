@@ -7,7 +7,8 @@ export type MetaUpgradeId =
   | "magnet"
   | "wisdom"
   | "greed"
-  | "headstart";
+  | "headstart"
+  | "unlock-jesus";
 
 export interface MetaUpgradeDef {
   id: MetaUpgradeId;
@@ -98,6 +99,15 @@ export const META_UPGRADE_DEFS: Record<MetaUpgradeId, MetaUpgradeDef> = {
     baseCost: 200,
     costGrowth: 2.0,
   },
+  "unlock-jesus": {
+    id: "unlock-jesus",
+    label: "Unlock Jesus Christ",
+    description: "Second playable character. Starts with Holy Beam.",
+    maxLevel: 1,
+    baseCost: 500,
+    costGrowth: 1,
+    icon: "holy-beam",
+  },
 };
 
 export const META_UPGRADE_ORDER: MetaUpgradeId[] = [
@@ -110,6 +120,7 @@ export const META_UPGRADE_ORDER: MetaUpgradeId[] = [
   "wisdom",
   "greed",
   "headstart",
+  "unlock-jesus",
 ];
 
 export function metaUpgradeCost(def: MetaUpgradeDef, currentLevel: number): number {

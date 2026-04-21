@@ -21,7 +21,7 @@ import { consumeMobileAction, isTouchDevice } from "../systems/MobileInput";
 import { MusicSystem } from "../systems/MusicSystem";
 import { burstVfx, impactVfx } from "../systems/PickupVfx";
 import { QuestSystem } from "../systems/QuestSystem";
-import { currentMetaBonuses, persistRun } from "../systems/SaveStore";
+import { currentMetaBonuses, loadSave, persistRun } from "../systems/SaveStore";
 import { StatsTracker } from "../systems/StatsTracker";
 import { WeaponSystem } from "../systems/WeaponSystem";
 import { applyUpgrade, pickUpgradeChoices } from "../systems/UpgradeSystem";
@@ -44,7 +44,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     const mapDef = MAP_DEFS[mapId];
     drawWorld(k, mapDef.palette);
 
-    const player = createPlayer(k);
+    const player = createPlayer(k, loadSave().selectedCharacter);
     const pendingStartLevels = applyMetaBonuses(player);
     const spawner = new EnemySpawner(k, player);
     const gems: XpGem[] = [];

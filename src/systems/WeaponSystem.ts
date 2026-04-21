@@ -134,6 +134,72 @@ export class WeaponSystem {
       case "samuraiSword":
         this.fireSamuraiSlash(stats);
         break;
+      case "holyBeam":
+        this.fireHolyBeam(stats);
+        break;
+      case "holyWater":
+        this.fireHolyWater(stats);
+        break;
+    }
+  }
+
+  private fireHolyBeam(stats: WeaponStats): void {
+    const target = this.spawner.nearest(this.player.obj.pos.x, this.player.obj.pos.y);
+    const baseDir = target
+      ? this.k
+          .vec2(
+            target.obj.pos.x - this.player.obj.pos.x,
+            target.obj.pos.y - this.player.obj.pos.y,
+          )
+          .unit()
+      : this.k.vec2(1, 0);
+    for (let i = 0; i < stats.count; i += 1) {
+      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.14;
+      const baseAngle = Math.atan2(baseDir.y, baseDir.x) + offset;
+      const dir = this.k.vec2(Math.cos(baseAngle), Math.sin(baseAngle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "pierce",
+          weapon: "holyBeam",
+          sprite: WEAPON_DEFS.holyBeam.spriteKey,
+          x: this.player.obj.pos.x,
+          y: this.player.obj.pos.y,
+          dir,
+          speed: 1400,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+          piercesLeft: 99,
+          rotationOffset: 0,
+        }),
+      );
+    }
+  }
+
+  private fireHolyWater(stats: WeaponStats): void {
+    const p = this.player.obj.pos;
+    const target = this.spawner.nearest(p.x, p.y);
+    const dir = target
+      ? this.k.vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y).unit()
+      : this.k.vec2(1, 0);
+    for (let i = 0; i < stats.count; i += 1) {
+      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.35;
+      const a = Math.atan2(dir.y, dir.x) + offset;
+      const d = this.k.vec2(Math.cos(a), Math.sin(a));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "bomb",
+          weapon: "holyWater",
+          sprite: WEAPON_DEFS.holyWater.spriteKey,
+          x: p.x,
+          y: p.y,
+          dir: d,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+        }),
+      );
     }
   }
 
@@ -663,12 +729,13 @@ export class WeaponSystem {
   }
 
   private explodeBomb(p: Projectile): void {
-    this.k.shake(6);
+    this.k.shake(p.weapon === "holyWater" ? 3 : 6);
+    const [r, g, b] = p.weapon === "holyWater" ? [140, 220, 255] : [255, 180, 80];
     const flash = this.k.add([
       this.k.circle(p.area),
       this.k.pos(p.obj.pos.x, p.obj.pos.y),
       this.k.anchor("center"),
-      this.k.color(255, 180, 80),
+      this.k.color(r, g, b),
       this.k.opacity(0.7),
       this.k.z(6),
     ]);
@@ -741,6 +808,8 @@ const WEAPON_HIT_COLORS: Partial<Record<WeaponId, [number, number, number]>> = {
   bomb: [255, 160, 60],
   caltrop: [180, 220, 180],
   fireTrail: [255, 100, 20],
+  holyBeam: [255, 245, 180],
+  holyWater: [140, 220, 255],
 };
 
 function enemyId(enemy: Enemy): number {
@@ -765,5 +834,7 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "megaBomb": return 28;
     case "bloodspikes": return 5;
     case "fireTrail": return 5;
+    case "holyBeam": return 8;
+    case "holyWater": return 4;
   }
 }

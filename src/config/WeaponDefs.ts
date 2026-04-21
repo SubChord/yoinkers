@@ -13,7 +13,9 @@ export type WeaponId =
   | "arrowHail"
   | "megaBomb"
   | "bloodspikes"
-  | "fireTrail";
+  | "fireTrail"
+  | "holyBeam"
+  | "holyWater";
 
 export interface WeaponStats {
   damage: number;
@@ -137,6 +139,20 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     description: "Leave a trail of scorched earth that burns enemies.",
     spriteKey: "fire-trail",
     base: { damage: 8, cooldownMs: 250, speed: 0, range: 0, count: 1, area: 26 },
+  },
+  holyBeam: {
+    id: "holyBeam",
+    label: "Holy Beam",
+    description: "A radiant piercing beam of divine light smites all in its path.",
+    spriteKey: "holy-beam",
+    base: { damage: 26, cooldownMs: 700, speed: 0, range: 560, count: 1, area: 18 },
+  },
+  holyWater: {
+    id: "holyWater",
+    label: "Holy Water",
+    description: "Tosses a vial that shatters into a scorching sacred puddle.",
+    spriteKey: "holy-water",
+    base: { damage: 10, cooldownMs: 2200, speed: 260, range: 260, count: 1, area: 52 },
   },
 };
 

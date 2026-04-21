@@ -1,6 +1,7 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/GameConfig";
-import { loadSave } from "../systems/SaveStore";
+import { isCharacterUnlocked, loadSave, setSelectedCharacter } from "../systems/SaveStore";
+import type { CharacterId } from "../types/GameTypes";
 
 export function registerMenuScene(k: KAPLAYCtx): void {
   k.scene("menu", () => {
@@ -84,11 +85,36 @@ export function registerMenuScene(k: KAPLAYCtx): void {
     });
     guideBtn.onClick(() => k.go("guide"));
 
+    const jesusUnlocked = isCharacterUnlocked(save, "jesus");
+    const charLabel = k.add([
+      k.text(characterLine(save.selectedCharacter, jesusUnlocked), { size: 18 }),
+      k.color(232, 232, 232),
+      k.anchor("center"),
+      k.pos(GAME_WIDTH / 2, 565),
+      k.fixed(),
+    ]);
+    const toggleCharacter = () => {
+      if (!jesusUnlocked) return;
+      const next: CharacterId = save.selectedCharacter === "jesus" ? "ninja" : "jesus";
+      setSelectedCharacter(next);
+      save.selectedCharacter = next;
+      (charLabel as unknown as { text: string }).text = characterLine(next, true);
+    };
+    if (jesusUnlocked) {
+      const charBtn = makeMenuButton(k, "SWITCH", 110, 32, GAME_WIDTH / 2 + 180, 565, {
+        bg: [70, 90, 120],
+        outline: [190, 210, 240],
+        size: 16,
+      });
+      charBtn.onClick(toggleCharacter);
+      k.onKeyPress("c", toggleCharacter);
+    }
+
     k.add([
       k.text(`Yoinks: ${save.yoinks.toLocaleString()} ¥`, { size: 20 }),
       k.color(255, 232, 140),
       k.anchor("center"),
-      k.pos(GAME_WIDTH / 2, 578),
+      k.pos(GAME_WIDTH / 2, 600),
       k.fixed(),
     ]);
 
@@ -108,6 +134,13 @@ export function registerMenuScene(k: KAPLAYCtx): void {
       );
     });
   });
+}
+
+function characterLine(id: CharacterId, jesusUnlocked: boolean): string {
+  const name = id === "jesus" ? "Jesus Christ" : "Ninja";
+  return jesusUnlocked
+    ? `Character: ${name}   [C / SWITCH]`
+    : `Character: ${name}   (Jesus Christ locked — buy in Shop for 500 ¥)`;
 }
 
 function prettyMap(id: string): string {
