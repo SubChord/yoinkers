@@ -29,6 +29,7 @@ Pure data directory. No runtime logic beyond weighted-random helpers, XP curve, 
 ## GOTCHAS
 - Adding a new weapon requires ALL of: `WeaponId` union + `WEAPON_DEFS` entry + `UpgradeDefs` unlock entry + `WeaponSystem` fire switch case + sprite loaded in `main.ts`. Missing any one → silent failure (weapon offered but nothing fires, or never offered, or renders as missing sprite).
 - `spriteKey` typos fail silently at render time — KAPLAY draws nothing. Verify sprite is actually loaded.
+- **Item auto-loader convention** (`main.ts` item loop): only loads `assets/Items/Consumables/${item.id}.png` when `spriteKey === "item-" + id`. Items that break that pattern (e.g. `redBull` camelCase id vs `redbull.png` file; `novaBlast` reusing `weapon-bomb`) must be pre-loaded above the loop or share an already-loaded key, otherwise the loop's fetch throws. Gear (`assets/Items/Gear/<gearId>.png`) has no such guard — keep gear ids lowercase + file names exact.
 - `dualKatana` and `arcaneHalo` have `cooldownMs: 0` on purpose — they are persistent orbit weapons driven by update loop, not cooldown-gated fire events. Do not "fix" to non-zero.
 - Evolutions (`stormShuriken`, `arcaneHalo`, `warhammerKunai`, `arrowHail`, `megaBomb`, `bloodspikes`, `dualKatana`) have no unlock upgrade — they are granted by evolution logic pairing a base weapon with a gear.
 - `ActiveItemId` lives in `types/GameTypes`, not here — ItemDefs imports it.
