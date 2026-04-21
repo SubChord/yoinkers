@@ -77,9 +77,10 @@ export function updatePlayer(k: KAPLAYCtx, player: Player, dt: number): void {
 
     if (Math.abs(dir.x) > Math.abs(dir.y)) {
       player.facing = dir.x < 0 ? "left" : "right";
-    } else {
+    } else if (Math.abs(dir.y) > Math.abs(dir.x)) {
       player.facing = dir.y < 0 ? "up" : "down";
     }
+    // on exact diagonal, keep the current facing
   }
 
   applyAnimation(player, moving);
