@@ -98,6 +98,8 @@ k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
 k.loadSprite("item-redbull", "assets/Items/Consumables/redbull.png");
 
 for (const item of Object.values(ITEM_DEFS)) {
+  // Skip items whose sprite is loaded elsewhere (e.g. item-redbull above, or novaBlast reusing weapon-bomb).
+  if (item.spriteKey !== `item-${item.id}`) continue;
   k.loadSprite(item.spriteKey, `assets/Items/Consumables/${item.id}.png`);
 }
 
