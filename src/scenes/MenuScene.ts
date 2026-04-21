@@ -75,17 +75,14 @@ export function registerMenuScene(k: KAPLAYCtx): void {
     const start = () => {
       if (didStart) return;
       didStart = true;
-      try {
-        document.documentElement.requestFullscreen?.();
-      } catch {
-        // Fullscreen may be blocked by the browser; safe to ignore.
-      }
       k.go("game");
     };
 
     startButton.onClick(start);
+    k.onClick(start);
     k.onKeyPress("space", start);
     k.onKeyPress("enter", start);
+    k.onKeyPress(() => start());
 
     subtitle.onUpdate(() => {
       const pulse = 0.5 + Math.sin(k.time() * 4) * 0.5;
