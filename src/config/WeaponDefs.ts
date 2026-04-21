@@ -4,7 +4,9 @@ export type WeaponId =
   | "boomerang"
   | "arrow"
   | "bomb"
-  | "caltrop";
+  | "caltrop"
+  | "samuraiSword"
+  | "dualKatana";
 
 export interface WeaponStats {
   damage: number;
@@ -65,6 +67,20 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     description: "Scatters spikes around you that damage over time.",
     spriteKey: "weapon-caltrop",
     base: { damage: 10, cooldownMs: 3000, speed: 0, range: 120, count: 4, area: 22 },
+  },
+  samuraiSword: {
+    id: "samuraiSword",
+    label: "Samurai Sword",
+    description: "Slashes an arc in front of you cleaving nearby foes.",
+    spriteKey: "weapon-katana",
+    base: { damage: 32, cooldownMs: 1100, speed: 0, range: 70, count: 1, area: 44 },
+  },
+  dualKatana: {
+    id: "dualKatana",
+    label: "Dual Spinning Samurai Sword",
+    description: "Twin spinning blades orbit you, shredding everything in reach.",
+    spriteKey: "weapon-katana",
+    base: { damage: 26, cooldownMs: 0, speed: 0, range: 0, count: 2, area: 28 },
   },
 };
 

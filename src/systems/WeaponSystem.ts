@@ -65,7 +65,11 @@ export class WeaponSystem {
     this.weaponStates.set(weaponId, state);
 
     if (weaponId === "magicOrb") {
-      this.ensureOrbs(stats);
+      this.ensureOrbit("magicOrb", stats, { radius: 60, speed: 2.4, scale: 1.5 });
+      return;
+    }
+    if (weaponId === "dualKatana") {
+      this.ensureOrbit("dualKatana", stats, { radius: 72, speed: 4.2, scale: 2.6 });
       return;
     }
 
@@ -88,7 +92,37 @@ export class WeaponSystem {
       case "caltrop":
         this.dropCaltrops(stats, nowMs);
         break;
+      case "samuraiSword":
+        this.fireSamuraiSlash(stats);
+        break;
     }
+  }
+
+  private fireSamuraiSlash(stats: WeaponStats): void {
+    const p = this.player.obj.pos;
+    const target = this.spawner.nearest(p.x, p.y);
+    const dir = target
+      ? this.k.vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y).unit()
+      : this.k.vec2(1, 0);
+    const offset = 42;
+    const sx = p.x + dir.x * offset;
+    const sy = p.y + dir.y * offset;
+    this.projectiles.push(
+      spawnProjectile(this.k, {
+        kind: "ground",
+        weapon: "samuraiSword",
+        sprite: WEAPON_DEFS.samuraiSword.spriteKey,
+        x: sx,
+        y: sy,
+        dir,
+        speed: 0,
+        damage: stats.damage,
+        area: stats.area,
+        maxRange: 0,
+        lifetimeMs: 320,
+        scale: 4.5,
+      }),
+    );
   }
 
   private fireShuriken(stats: WeaponStats): void {
@@ -246,15 +280,31 @@ export class WeaponSystem {
     void nowMs;
   }
 
-  private ensureOrbs(stats: WeaponStats): void {
-    const existing = this.projectiles.filter((p) => p.kind === "orbit" && p.weapon === "magicOrb");
-    for (let i = existing.length; i < stats.count; i += 1) {
-      const angle = (Math.PI * 2 * i) / Math.max(1, stats.count);
+  private ensureOrbit(
+    weaponId: WeaponId,
+    stats: WeaponStats,
+    opts: { radius: number; speed: number; scale: number },
+  ): void {
+    const existing = this.projectiles.filter((p) => p.kind === "orbit" && p.weapon === weaponId);
+    const target = Math.max(1, stats.count);
+
+    for (let i = existing.length; i > target; i -= 1) {
+      const toRemove = this.projectiles.findIndex(
+        (p) => p.kind === "orbit" && p.weapon === weaponId,
+      );
+      if (toRemove >= 0) {
+        this.projectiles[toRemove].obj.destroy();
+        this.projectiles.splice(toRemove, 1);
+      }
+    }
+
+    for (let i = existing.length; i < target; i += 1) {
+      const angle = (Math.PI * 2 * i) / target;
       this.projectiles.push(
         spawnProjectile(this.k, {
           kind: "orbit",
-          weapon: "magicOrb",
-          sprite: WEAPON_DEFS.magicOrb.spriteKey,
+          weapon: weaponId,
+          sprite: WEAPON_DEFS[weaponId].spriteKey,
           x: this.player.obj.pos.x,
           y: this.player.obj.pos.y,
           dir: this.k.vec2(1, 0),
@@ -263,14 +313,18 @@ export class WeaponSystem {
           area: stats.area,
           maxRange: 0,
           orbitAngle: angle,
-          orbitRadius: 60,
-          orbitSpeed: 2.4,
+          orbitRadius: opts.radius,
+          orbitSpeed: opts.speed,
+          scale: opts.scale,
         }),
       );
     }
+
     for (const orb of this.projectiles) {
-      if (orb.kind === "orbit" && orb.weapon === "magicOrb") {
+      if (orb.kind === "orbit" && orb.weapon === weaponId) {
         orb.damage = stats.damage;
+        orb.orbitRadius = opts.radius;
+        orb.orbitSpeed = opts.speed;
       }
     }
   }
@@ -287,7 +341,13 @@ export class WeaponSystem {
 
       if (p.kind === "ground") {
         p.elapsedMs += dt * 1000;
-        this.checkPersistentHits(p, nowMs, CALTROP_HIT_COOLDOWN_MS);
+        if (p.weapon === "samuraiSword") {
+          (p.obj as { angle?: number }).angle =
+            ((p.obj as { angle?: number }).angle ?? 0) + dt * 1800;
+          this.checkPersistentHits(p, nowMs, 500);
+        } else {
+          this.checkPersistentHits(p, nowMs, CALTROP_HIT_COOLDOWN_MS);
+        }
         if (p.lifetimeMs > 0 && p.elapsedMs >= p.lifetimeMs) {
           p.obj.destroy();
           this.projectiles.splice(i, 1);
@@ -459,6 +519,10 @@ export class WeaponSystem {
     p.orbitAngle += p.orbitSpeed * dt;
     p.obj.pos.x = this.player.obj.pos.x + Math.cos(p.orbitAngle) * p.orbitRadius;
     p.obj.pos.y = this.player.obj.pos.y + Math.sin(p.orbitAngle) * p.orbitRadius;
+    if (p.weapon === "dualKatana") {
+      (p.obj as { angle?: number }).angle =
+        ((p.obj as { angle?: number }).angle ?? 0) + dt * 1400;
+    }
   }
 
   private findEnemyHit(p: Projectile): number {
@@ -486,5 +550,7 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "arrow": return 6;
     case "bomb": return 20;
     case "caltrop": return 4;
+    case "samuraiSword": return 10;
+    case "dualKatana": return 8;
   }
 }

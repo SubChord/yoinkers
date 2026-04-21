@@ -58,6 +58,15 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     icon: "weapon-caltrop",
     weapon: "caltrop",
   },
+  {
+    id: "unlock-samuraiSword",
+    kind: "weapon-unlock",
+    label: "Samurai Sword",
+    description: "Slash an arc in front of you. Pair with Twin Sai to awaken it.",
+    maxLevel: 1,
+    icon: "weapon-katana",
+    weapon: "samuraiSword",
+  },
 
   {
     id: "shuriken-damage",
@@ -189,6 +198,43 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     maxLevel: 3,
     icon: "weapon-caltrop",
     weapon: "caltrop",
+  },
+
+  {
+    id: "samuraiSword-damage",
+    kind: "weapon-upgrade",
+    label: "Honed Edge",
+    description: "+10 samurai sword damage.",
+    maxLevel: 5,
+    icon: "weapon-katana",
+    weapon: "samuraiSword",
+  },
+  {
+    id: "samuraiSword-cooldown",
+    kind: "weapon-upgrade",
+    label: "Iaido Stance",
+    description: "-12% samurai sword cooldown.",
+    maxLevel: 3,
+    icon: "weapon-katana",
+    weapon: "samuraiSword",
+  },
+  {
+    id: "dualKatana-damage",
+    kind: "weapon-upgrade",
+    label: "Twin Edge",
+    description: "+8 dual katana damage.",
+    maxLevel: 5,
+    icon: "weapon-katana",
+    weapon: "dualKatana",
+  },
+  {
+    id: "dualKatana-count",
+    kind: "weapon-upgrade",
+    label: "More Blades",
+    description: "+1 orbiting katana.",
+    maxLevel: 2,
+    icon: "weapon-katana",
+    weapon: "dualKatana",
   },
 
   {

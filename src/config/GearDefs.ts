@@ -4,7 +4,8 @@ export type GearId =
   | "hammer"
   | "book"
   | "bag"
-  | "hourglass";
+  | "hourglass"
+  | "sai";
 
 export interface GearDef {
   id: GearId;
@@ -57,6 +58,13 @@ export const GEAR_DEFS: Record<GearId, GearDef> = {
     spriteKey: "gear-hourglass",
     rarity: 0.7,
   },
+  sai: {
+    id: "sai",
+    label: "Twin Sai",
+    description: "Ancient dueling daggers. Pair with a Samurai Sword to awaken a dual blade form.",
+    spriteKey: "gear-sai",
+    rarity: 0.5,
+  },
 };
 
 export const GEAR_IDS: GearId[] = Object.keys(GEAR_DEFS) as GearId[];
@@ -102,6 +110,9 @@ export function applyGearStack(player: {
       break;
     case "hourglass":
       player.stats.cooldownMult *= 0.92;
+      break;
+    case "sai":
+      player.stats.damageMult *= 1.05;
       break;
   }
 }

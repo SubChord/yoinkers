@@ -90,6 +90,7 @@ k.loadSprite("boomerang", "assets/Items/Weapon/kunai.png");
 k.loadSprite("weapon-arrow", "assets/Items/Weapon/arrow.png");
 k.loadSprite("weapon-bomb", "assets/Items/Weapon/bomb.png");
 k.loadSprite("weapon-caltrop", "assets/Items/Weapon/caltrop.png");
+k.loadSprite("weapon-katana", "assets/Items/Weapon/katana.png");
 k.loadSprite("chest", "assets/Items/Treasure/chest.png", { sliceX: 2, sliceY: 1 });
 k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
 

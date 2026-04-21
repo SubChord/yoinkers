@@ -26,6 +26,7 @@ import { createHud, updateHud } from "../ui/HUD";
 import { mountMinimap } from "../ui/Minimap";
 import { mountMusicSelector } from "../ui/MusicSelector";
 import { mountPauseButton } from "../ui/PauseButton";
+import { showEvolutionPopup } from "../ui/EvolutionPopup";
 import { showUpgradeMenu, type UpgradeMenu } from "../ui/UpgradeMenu";
 
 interface GameSceneArgs {
@@ -152,6 +153,33 @@ export function registerGameScene(k: KAPLAYCtx): void {
     });
     k.onKeyPress("p", () => togglePause());
 
+    let dualKatanaAnnounced = false;
+    const checkEvolutions = () => {
+      if (
+        !dualKatanaAnnounced &&
+        player.stats.weapons.includes("samuraiSword") &&
+        (player.stats.gear["sai"] ?? 0) >= 1
+      ) {
+        dualKatanaAnnounced = true;
+        state.paused = true;
+        playSfx(k, "sfx-yoink");
+        playSfx(k, "sfx-levelup");
+        const idx = player.stats.weapons.indexOf("samuraiSword");
+        if (idx >= 0) player.stats.weapons.splice(idx, 1);
+        if (!player.stats.weapons.includes("dualKatana")) {
+          player.stats.weapons.push("dualKatana");
+        }
+        showEvolutionPopup(k, {
+          title: "Dual Spinning Samurai Sword",
+          subtitle: "Samurai Sword + Twin Sai combine into whirling twin blades!",
+          spriteKey: "weapon-katana",
+          onDone: () => {
+            state.paused = false;
+          },
+        });
+      }
+    };
+
     spawner.spawnWave(state.wave);
     quests.onWave(state.wave);
 
@@ -211,6 +239,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       collectGems(k, gems, player, dt, quests);
 
       maybeLevelUp(player, state, quests);
+      checkEvolutions();
 
       updateHud(hud, {
         player,
