@@ -173,6 +173,66 @@ export class WeaponSystem {
       case "homingShuriken":
         this.fireHomingShuriken(stats);
         break;
+      case "krabbyPatty":
+        this.fireKrabbyPatty(stats);
+        break;
+      case "bestFriends":
+        this.fireBestFriends(stats);
+        break;
+    }
+  }
+
+  private fireKrabbyPatty(stats: WeaponStats): void {
+    const p = this.player.obj.pos;
+    const target = this.spawner.nearest(p.x, p.y);
+    const baseDir = target
+      ? this.k.vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y).unit()
+      : this.k.vec2(1, 0);
+    const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    for (let i = 0; i < stats.count; i += 1) {
+      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.2;
+      const angle = baseAngle + offset;
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "pierce",
+          weapon: "krabbyPatty",
+          sprite: WEAPON_DEFS.krabbyPatty.spriteKey,
+          x: p.x,
+          y: p.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+          piercesLeft: 3,
+          rotationOffset: 0,
+        }),
+      );
+    }
+  }
+
+  private fireBestFriends(stats: WeaponStats): void {
+    const count = Math.max(8, stats.count);
+    for (let i = 0; i < count; i += 1) {
+      const angle = (Math.PI * 2 * i) / count + this.k.rand(-0.05, 0.05);
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "pierce",
+          weapon: "bestFriends",
+          sprite: WEAPON_DEFS.bestFriends.spriteKey,
+          x: this.player.obj.pos.x,
+          y: this.player.obj.pos.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+          piercesLeft: 4,
+          rotationOffset: 0,
+        }),
+      );
     }
   }
 
@@ -1214,5 +1274,7 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "crossbow": return 18;
     case "chainLightning": return 6;
     case "homingShuriken": return 8;
+    case "krabbyPatty": return 6;
+    case "bestFriends": return 5;
   }
 }

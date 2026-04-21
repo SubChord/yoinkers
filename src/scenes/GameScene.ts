@@ -822,6 +822,32 @@ const WEAPON_EVOLUTIONS: WeaponEvolution[] = [
       });
     },
   },
+  {
+    from: "krabbyPatty",
+    gear: "patrick",
+    to: "bestFriends",
+    title: "Best Friends Forever",
+    subtitle: "Krabby Patty + Patrick Star — SpongeBob and his best friend rain patties in every direction!",
+    spriteKey: "gear-patrick",
+    charRequired: "spongebob",
+    onTrigger: (k, player) => {
+      // Patrick waddles alongside SpongeBob, orbiting slowly at z=11.
+      const patrick = k.add([
+        k.sprite("gear-patrick"),
+        k.pos(player.obj.pos.x, player.obj.pos.y),
+        k.anchor("center"),
+        k.scale(0.85),
+        k.z(11),
+      ]);
+      let t = 0;
+      patrick.onUpdate(() => {
+        t += k.dt();
+        const orbit = 22;
+        patrick.pos.x = player.obj.pos.x + Math.cos(t * 2.2) * orbit;
+        patrick.pos.y = player.obj.pos.y + Math.sin(t * 2.2) * 10 + 2;
+      });
+    },
+  },
 ];
 
 function applyMetaBonuses(player: Player): number {

@@ -574,6 +574,293 @@ export function buildShockwaveDataURL(): string {
   return canvas.toDataURL("image/png");
 }
 
+/**
+ * 4x4 walk spritesheet for SpongeBob SquarePants.
+ * Rows: 0=down, 1=up, 2=left, 3=right. 4 walk frames per row.
+ */
+export function buildSpongebobWalkDataURL(): string {
+  const [canvas, ctx] = newCanvas(FRAME * 4, FRAME * 4);
+
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      ctx.save();
+      ctx.translate(col * FRAME, row * FRAME);
+      const legOffset = col === 1 ? -1 : col === 3 ? 1 : 0;
+      const bodyBob = col === 1 || col === 3 ? -1 : 0;
+      if (row === 0) drawSpongebobFront(ctx, legOffset, bodyBob);
+      else if (row === 1) drawSpongebobBack(ctx, legOffset, bodyBob);
+      else drawSpongebobSide(ctx, legOffset, bodyBob, row === 3);
+      ctx.restore();
+    }
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
+function drawSpongebobBody(ctx: CanvasRenderingContext2D, bodyBob: number): void {
+  // Yellow square sponge body
+  ctx.fillStyle = "#f7d23a";
+  ctx.fillRect(7, 3 + bodyBob, 18, 21 - bodyBob);
+  // Darker yellow edges for definition
+  ctx.fillStyle = "#c9a820";
+  ctx.fillRect(7, 3 + bodyBob, 18, 1);
+  ctx.fillRect(7, 23, 18, 1);
+  ctx.fillRect(7, 3 + bodyBob, 1, 21 - bodyBob);
+  ctx.fillRect(24, 3 + bodyBob, 1, 21 - bodyBob);
+  // Sponge holes
+  ctx.fillStyle = "#d8b428";
+  ctx.fillRect(9, 6 + bodyBob, 2, 2);
+  ctx.fillRect(14, 8 + bodyBob, 2, 2);
+  ctx.fillRect(20, 6 + bodyBob, 2, 2);
+  ctx.fillRect(11, 12 + bodyBob, 2, 2);
+  ctx.fillRect(18, 13 + bodyBob, 2, 2);
+  ctx.fillRect(9, 18, 2, 2);
+  ctx.fillRect(15, 20, 2, 2);
+  ctx.fillRect(20, 19, 2, 2);
+}
+
+function drawSpongebobOutfit(ctx: CanvasRenderingContext2D): void {
+  // White shirt collar strip
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(8, 20, 16, 2);
+  // Red tie knot
+  ctx.fillStyle = "#c81818";
+  ctx.fillRect(14, 21, 4, 3);
+  // Brown pants (at the very bottom of the body)
+  ctx.fillStyle = "#6a4a20";
+  ctx.fillRect(7, 24, 18, 3);
+  // Belt line
+  ctx.fillStyle = "#4a2f14";
+  ctx.fillRect(7, 24, 18, 1);
+}
+
+function drawSpongebobLegs(ctx: CanvasRenderingContext2D, legOffset: number): void {
+  // White socks
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(10 + legOffset, 27, 3, 2);
+  ctx.fillRect(19 - legOffset, 27, 3, 2);
+  // Red and blue stripe socks
+  ctx.fillStyle = "#c81818";
+  ctx.fillRect(10 + legOffset, 27, 3, 1);
+  ctx.fillRect(19 - legOffset, 27, 3, 1);
+  // Black shoes
+  ctx.fillStyle = "#111111";
+  ctx.fillRect(10 + legOffset, 29, 4, 3);
+  ctx.fillRect(18 - legOffset, 29, 4, 3);
+}
+
+function drawSpongebobFront(
+  ctx: CanvasRenderingContext2D,
+  legOffset: number,
+  bodyBob: number,
+): void {
+  drawSpongebobBody(ctx, bodyBob);
+
+  // Big round eyes
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(10, 9 + bodyBob, 5, 5);
+  ctx.fillRect(17, 9 + bodyBob, 5, 5);
+  // Eye outlines
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(10, 9 + bodyBob, 5, 1);
+  ctx.fillRect(10, 13 + bodyBob, 5, 1);
+  ctx.fillRect(10, 9 + bodyBob, 1, 5);
+  ctx.fillRect(14, 9 + bodyBob, 1, 5);
+  ctx.fillRect(17, 9 + bodyBob, 5, 1);
+  ctx.fillRect(17, 13 + bodyBob, 5, 1);
+  ctx.fillRect(17, 9 + bodyBob, 1, 5);
+  ctx.fillRect(21, 9 + bodyBob, 1, 5);
+  // Blue irises
+  ctx.fillStyle = "#4a90c8";
+  ctx.fillRect(12, 11 + bodyBob, 2, 2);
+  ctx.fillRect(19, 11 + bodyBob, 2, 2);
+  // Black pupils
+  ctx.fillStyle = "#111111";
+  ctx.fillRect(12, 12 + bodyBob, 1, 1);
+  ctx.fillRect(19, 12 + bodyBob, 1, 1);
+
+  // Rosy cheeks
+  ctx.fillStyle = "rgba(230, 80, 80, 0.5)";
+  ctx.fillRect(9, 15 + bodyBob, 2, 2);
+  ctx.fillRect(21, 15 + bodyBob, 2, 2);
+
+  // Goofy toothy smile
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(12, 17 + bodyBob, 8, 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(14, 17 + bodyBob, 2, 2); // two front teeth
+  ctx.fillRect(16, 17 + bodyBob, 2, 2);
+
+  drawSpongebobOutfit(ctx);
+  drawSpongebobLegs(ctx, legOffset);
+}
+
+function drawSpongebobBack(
+  ctx: CanvasRenderingContext2D,
+  legOffset: number,
+  bodyBob: number,
+): void {
+  drawSpongebobBody(ctx, bodyBob);
+  drawSpongebobOutfit(ctx);
+  drawSpongebobLegs(ctx, legOffset);
+}
+
+function drawSpongebobSide(
+  ctx: CanvasRenderingContext2D,
+  legOffset: number,
+  bodyBob: number,
+  facingRight: boolean,
+): void {
+  if (facingRight) {
+    ctx.translate(FRAME, 0);
+    ctx.scale(-1, 1);
+  }
+  drawSpongebobBody(ctx, bodyBob);
+
+  // Single eye in profile
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(10, 9 + bodyBob, 6, 6);
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(10, 9 + bodyBob, 6, 1);
+  ctx.fillRect(10, 14 + bodyBob, 6, 1);
+  ctx.fillRect(10, 9 + bodyBob, 1, 6);
+  ctx.fillRect(15, 9 + bodyBob, 1, 6);
+  ctx.fillStyle = "#4a90c8";
+  ctx.fillRect(12, 11 + bodyBob, 2, 2);
+  ctx.fillStyle = "#111111";
+  ctx.fillRect(12, 12 + bodyBob, 1, 1);
+
+  // Smile from side
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(10, 17 + bodyBob, 6, 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(11, 17 + bodyBob, 2, 2);
+
+  drawSpongebobOutfit(ctx);
+  drawSpongebobLegs(ctx, legOffset);
+}
+
+/** 20x16 stacked-burger Krabby Patty — bun, lettuce, patty, bun. */
+export function buildKrabbyPattyDataURL(): string {
+  const [canvas, ctx] = newCanvas(20, 16);
+
+  // Top bun (golden brown dome)
+  ctx.fillStyle = "#d08a3a";
+  ctx.beginPath();
+  ctx.ellipse(10, 4, 9, 3.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#e0a050";
+  ctx.beginPath();
+  ctx.ellipse(10, 3, 8, 2.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Sesame seeds
+  ctx.fillStyle = "#f4e0a0";
+  ctx.fillRect(5, 3, 1, 1);
+  ctx.fillRect(8, 2, 1, 1);
+  ctx.fillRect(11, 2, 1, 1);
+  ctx.fillRect(14, 3, 1, 1);
+
+  // Lettuce (green wavy strip)
+  ctx.fillStyle = "#6ac048";
+  ctx.fillRect(1, 6, 18, 2);
+  ctx.fillStyle = "#4aa030";
+  ctx.fillRect(1, 7, 18, 1);
+  // Leafy edges
+  ctx.fillStyle = "#6ac048";
+  ctx.fillRect(1, 8, 2, 1);
+  ctx.fillRect(4, 8, 2, 1);
+  ctx.fillRect(8, 8, 2, 1);
+  ctx.fillRect(12, 8, 2, 1);
+  ctx.fillRect(16, 8, 2, 1);
+
+  // Cheese slice (yellow triangle peeking from right)
+  ctx.fillStyle = "#f0c840";
+  ctx.fillRect(2, 8, 16, 1);
+  ctx.fillStyle = "#d0a820";
+  ctx.fillRect(14, 9, 4, 1);
+
+  // Beef patty
+  ctx.fillStyle = "#5a2e1a";
+  ctx.fillRect(1, 9, 18, 3);
+  ctx.fillStyle = "#3a1a0a";
+  ctx.fillRect(1, 11, 18, 1);
+  // Char marks
+  ctx.fillStyle = "#2a0f05";
+  ctx.fillRect(4, 10, 2, 1);
+  ctx.fillRect(9, 10, 2, 1);
+  ctx.fillRect(14, 10, 2, 1);
+
+  // Bottom bun
+  ctx.fillStyle = "#b87a2a";
+  ctx.fillRect(1, 12, 18, 3);
+  ctx.fillStyle = "#8a5a1a";
+  ctx.fillRect(1, 14, 18, 1);
+
+  return canvas.toDataURL("image/png");
+}
+
+/** 32x32 pink 5-point Patrick starfish with goofy face. */
+export function buildPatrickDataURL(): string {
+  const [canvas, ctx] = newCanvas(32, 32);
+
+  // 5-point star in pink
+  ctx.fillStyle = "#ed7590";
+  ctx.beginPath();
+  const cx = 16;
+  const cy = 17;
+  const outer = 13;
+  const inner = 5.5;
+  for (let i = 0; i < 10; i++) {
+    const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+    const r = i % 2 === 0 ? outer : inner;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Darker underside hint
+  ctx.fillStyle = "#c05070";
+  ctx.beginPath();
+  ctx.arc(cx, cy + 3, 8, 0, Math.PI);
+  ctx.fill();
+
+  // Lighter speckles on body
+  ctx.fillStyle = "#ffa0b8";
+  ctx.fillRect(10, 15, 2, 2);
+  ctx.fillRect(20, 14, 2, 2);
+  ctx.fillRect(14, 20, 2, 2);
+  ctx.fillRect(18, 22, 2, 2);
+
+  // Eyes
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(11, 14, 4, 4);
+  ctx.fillRect(17, 14, 4, 4);
+  ctx.fillStyle = "#111111";
+  ctx.fillRect(13, 15, 1, 2);
+  ctx.fillRect(19, 15, 1, 2);
+
+  // Gap-tooth mouth
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(12, 20, 8, 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(15, 20, 2, 2);
+
+  // Green swim-trunk strip across the bottom points
+  ctx.fillStyle = "#3aa048";
+  ctx.fillRect(8, 24, 16, 3);
+  // Purple polka dots on trunks
+  ctx.fillStyle = "#9848c0";
+  ctx.fillRect(10, 25, 2, 1);
+  ctx.fillRect(14, 25, 2, 1);
+  ctx.fillRect(18, 25, 2, 1);
+  ctx.fillRect(22, 25, 1, 1);
+
+  return canvas.toDataURL("image/png");
+}
+
 /** 32x32 stacked-swirl poop pile with a couple of buzzing flies. */
 export function buildPoophoodDataURL(): string {
   const [canvas, ctx] = newCanvas(32, 32);

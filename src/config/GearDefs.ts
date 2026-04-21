@@ -5,7 +5,8 @@ export type GearId =
   | "book"
   | "bag"
   | "hourglass"
-  | "sai";
+  | "sai"
+  | "patrick";
 
 export interface GearDef {
   id: GearId;
@@ -65,6 +66,13 @@ export const GEAR_DEFS: Record<GearId, GearDef> = {
     spriteKey: "gear-sai",
     rarity: 0.5,
   },
+  patrick: {
+    id: "patrick",
+    label: "Patrick Star",
+    description: "A dim-witted starfish sidekick. +8% damage per copy. Evolves Krabby Patty into Best Friends Forever.",
+    spriteKey: "gear-patrick",
+    rarity: 0.5,
+  },
 };
 
 export const GEAR_IDS: GearId[] = Object.keys(GEAR_DEFS) as GearId[];
@@ -113,6 +121,9 @@ export function applyGearStack(player: {
       break;
     case "sai":
       player.stats.damageMult *= 1.05;
+      break;
+    case "patrick":
+      player.stats.damageMult *= 1.08;
       break;
   }
 }

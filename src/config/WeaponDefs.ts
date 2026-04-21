@@ -22,7 +22,9 @@ export type WeaponId =
   | "poisonCloud"
   | "crossbow"
   | "chainLightning"
-  | "homingShuriken";
+  | "homingShuriken"
+  | "krabbyPatty"
+  | "bestFriends";
 
 export interface WeaponStats {
   damage: number;
@@ -209,6 +211,20 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     description: "A cursed star that curves toward its target — cannot miss.",
     spriteKey: "shuriken",
     base: { damage: 22, cooldownMs: 950, speed: 380, range: 560, count: 1, area: 22 },
+  },
+  krabbyPatty: {
+    id: "krabbyPatty",
+    label: "Krabby Patty",
+    description: "Flings a sesame-seeded patty that plows through a couple of foes.",
+    spriteKey: "weapon-krabby-patty",
+    base: { damage: 24, cooldownMs: 900, speed: 380, range: 440, count: 1, area: 24 },
+  },
+  bestFriends: {
+    id: "bestFriends",
+    label: "Best Friends Forever",
+    description: "SpongeBob and Patrick blanket the battlefield with piercing patties in every direction.",
+    spriteKey: "weapon-krabby-patty",
+    base: { damage: 22, cooldownMs: 700, speed: 400, range: 480, count: 8, area: 24 },
   },
 };
 

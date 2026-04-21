@@ -5,7 +5,7 @@ export type Facing = "down" | "up" | "left" | "right";
 
 export type ActiveItemId = "redBull" | "novaBlast";
 
-export type CharacterId = "ninja" | "jesus" | "catLady";
+export type CharacterId = "ninja" | "jesus" | "catLady" | "spongebob";
 
 export interface PlayerStats {
   hp: number;

@@ -11,10 +11,13 @@ import {
   buildHolyBeamDataURL,
   buildHolyWaterDataURL,
   buildJesusWalkDataURL,
+  buildKrabbyPattyDataURL,
   buildLaserDotDataURL,
+  buildPatrickDataURL,
   buildPoisonCloudDataURL,
   buildPoophoodDataURL,
   buildShockwaveDataURL,
+  buildSpongebobWalkDataURL,
 } from "./assets/SpriteGen";
 import { GAME_HEIGHT, GAME_WIDTH } from "./config/GameConfig";
 import { GEAR_DEFS } from "./config/GearDefs";
@@ -81,6 +84,12 @@ k.loadSprite("catlady-walk", buildCatLadyWalkDataURL(), {
   anims: PLAYER_ANIMS,
 });
 
+k.loadSprite("spongebob-walk", buildSpongebobWalkDataURL(), {
+  sliceX: 4,
+  sliceY: 4,
+  anims: PLAYER_ANIMS,
+});
+
 const ENEMY_SPRITES: Array<{ key: string; path: string }> = [
   { key: "enemy-slime", path: "assets/Actor/Monster/Slime/SpriteSheet.png" },
   { key: "enemy-skel", path: "assets/Actor/Monster/SkullBlue/SpriteSheet.png" },
@@ -133,6 +142,8 @@ k.loadSprite("chain-bolt", buildChainBoltDataURL());
 k.loadSprite("cosmetic-poophood", buildPoophoodDataURL());
 k.loadSprite("cosmetic-guitar", buildGuitarDataURL());
 k.loadSprite("weapon-shockwave", buildShockwaveDataURL());
+k.loadSprite("weapon-krabby-patty", buildKrabbyPattyDataURL());
+k.loadSprite("gear-patrick", buildPatrickDataURL());
 k.loadSprite("chest", "assets/Items/Treasure/chest.png", { sliceX: 2, sliceY: 1 });
 k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
 k.loadSprite("item-redbull", "assets/Items/Consumables/redbull.png");
@@ -143,7 +154,10 @@ for (const item of Object.values(ITEM_DEFS)) {
   k.loadSprite(item.spriteKey, `assets/Items/Consumables/${item.id}.png`);
 }
 
+// Gear with procedural sprites are pre-loaded above and skipped here.
+const PROCEDURAL_GEAR: readonly string[] = ["patrick"];
 for (const gearId of Object.keys(GEAR_DEFS)) {
+  if (PROCEDURAL_GEAR.includes(gearId)) continue;
   const def = GEAR_DEFS[gearId as keyof typeof GEAR_DEFS];
   k.loadSprite(def.spriteKey, `assets/Items/Gear/${gearId}.png`);
 }

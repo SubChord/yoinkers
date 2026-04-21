@@ -35,6 +35,14 @@ export const CHARACTER_DEFS: Record<CharacterId, CharacterDef> = {
     startingWeapon: "laserPointer",
     unlockCost: 750,
   },
+  spongebob: {
+    id: "spongebob",
+    label: "SpongeBob",
+    description: "Absorbent and yellow. Throws piercing Krabby Patties — pair with a Patrick star for Best Friends Forever.",
+    spriteKey: "spongebob-walk",
+    startingWeapon: "krabbyPatty",
+    unlockCost: 600,
+  },
 };
 
-export const CHARACTER_ORDER: CharacterId[] = ["ninja", "jesus", "catLady"];
+export const CHARACTER_ORDER: CharacterId[] = ["ninja", "jesus", "catLady", "spongebob"];
