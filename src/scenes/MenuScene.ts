@@ -1,7 +1,7 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
+import { CHARACTER_DEFS } from "../config/CharacterDefs";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/GameConfig";
-import { isCharacterUnlocked, loadSave, setSelectedCharacter } from "../systems/SaveStore";
-import type { CharacterId } from "../types/GameTypes";
+import { loadSave } from "../systems/SaveStore";
 
 export function registerMenuScene(k: KAPLAYCtx): void {
   k.scene("menu", () => {
@@ -61,66 +61,57 @@ export function registerMenuScene(k: KAPLAYCtx): void {
     });
     startBtn.onClick(start);
 
-    const mapsBtn = makeMenuButton(k, "MAPS", 140, 46, GAME_WIDTH / 2 - 225, 510, {
+    const mapsBtn = makeMenuButton(k, "MAPS", 140, 46, GAME_WIDTH / 2 - 300, 510, {
       bg: [64, 96, 130],
       outline: [180, 210, 244],
     });
     mapsBtn.onClick(() => k.go("maps"));
 
-    const shopBtn = makeMenuButton(k, "SHOP", 140, 46, GAME_WIDTH / 2 - 75, 510, {
+    const charactersBtn = makeMenuButton(k, "CHARACTERS", 140, 46, GAME_WIDTH / 2 - 150, 510, {
+      bg: [70, 90, 120],
+      outline: [190, 210, 240],
+      size: 18,
+    });
+    charactersBtn.onClick(() => k.go("characters"));
+
+    const shopBtn = makeMenuButton(k, "SHOP", 140, 46, GAME_WIDTH / 2, 510, {
       bg: [110, 88, 42],
       outline: [244, 220, 150],
     });
     shopBtn.onClick(() => k.go("shop"));
 
-    const statsBtn = makeMenuButton(k, "STATS", 140, 46, GAME_WIDTH / 2 + 75, 510, {
+    const statsBtn = makeMenuButton(k, "STATS", 140, 46, GAME_WIDTH / 2 + 150, 510, {
       bg: [44, 80, 100],
       outline: [180, 210, 230],
     });
     statsBtn.onClick(() => k.go("stats"));
 
-    const guideBtn = makeMenuButton(k, "GUIDE", 140, 46, GAME_WIDTH / 2 + 225, 510, {
+    const guideBtn = makeMenuButton(k, "GUIDE", 140, 46, GAME_WIDTH / 2 + 300, 510, {
       bg: [90, 62, 118],
       outline: [210, 180, 230],
     });
     guideBtn.onClick(() => k.go("guide"));
 
-    const jesusUnlocked = isCharacterUnlocked(save, "jesus");
-    const charLabel = k.add([
-      k.text(characterLine(save.selectedCharacter, jesusUnlocked), { size: 18 }),
+    k.add([
+      k.text(`Character: ${CHARACTER_DEFS[save.selectedCharacter].label}`, { size: 18 }),
       k.color(232, 232, 232),
       k.anchor("center"),
       k.pos(GAME_WIDTH / 2, 565),
       k.fixed(),
     ]);
-    const toggleCharacter = () => {
-      if (!jesusUnlocked) return;
-      const next: CharacterId = save.selectedCharacter === "jesus" ? "ninja" : "jesus";
-      setSelectedCharacter(next);
-      save.selectedCharacter = next;
-      (charLabel as unknown as { text: string }).text = characterLine(next, true);
-    };
-    if (jesusUnlocked) {
-      const charBtn = makeMenuButton(k, "SWITCH", 110, 32, GAME_WIDTH / 2 + 180, 565, {
-        bg: [70, 90, 120],
-        outline: [190, 210, 240],
-        size: 16,
-      });
-      charBtn.onClick(toggleCharacter);
-      k.onKeyPress("c", toggleCharacter);
-    }
 
     k.add([
       k.text(`Yoinks: ${save.yoinks.toLocaleString()} ¥`, { size: 20 }),
       k.color(255, 232, 140),
       k.anchor("center"),
-      k.pos(GAME_WIDTH / 2, 600),
+      k.pos(GAME_WIDTH / 2, 598),
       k.fixed(),
     ]);
 
     k.onKeyPress("space", start);
     k.onKeyPress("enter", start);
     k.onKeyPress("m", () => k.go("maps"));
+    k.onKeyPress("c", () => k.go("characters"));
     k.onKeyPress("h", () => k.go("shop"));
     k.onKeyPress("s", () => k.go("stats"));
     k.onKeyPress("g", () => k.go("guide"));
@@ -134,13 +125,6 @@ export function registerMenuScene(k: KAPLAYCtx): void {
       );
     });
   });
-}
-
-function characterLine(id: CharacterId, jesusUnlocked: boolean): string {
-  const name = id === "jesus" ? "Jesus Christ" : "Ninja";
-  return jesusUnlocked
-    ? `Character: ${name}   [C / SWITCH]`
-    : `Character: ${name}   (Jesus Christ locked — buy in Shop for 500 ¥)`;
 }
 
 function prettyMap(id: string): string {

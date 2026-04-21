@@ -1,18 +1,8 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
+import { CHARACTER_DEFS } from "../config/CharacterDefs";
 import { PLAYER_BASE_HP, PLAYER_BASE_SPEED, WORLD_SIZE } from "../config/GameConfig";
-import type { WeaponId } from "../config/WeaponDefs";
 import { getMobileInput } from "../systems/MobileInput";
 import type { CharacterId, Facing, PlayerStats } from "../types/GameTypes";
-
-const CHARACTER_SPRITES: Record<CharacterId, string> = {
-  ninja: "player-walk",
-  jesus: "jesus-walk",
-};
-
-const CHARACTER_STARTING_WEAPONS: Record<CharacterId, WeaponId> = {
-  ninja: "shuriken",
-  jesus: "holyBeam",
-};
 
 export interface Player {
   obj: GameObj;
@@ -24,8 +14,9 @@ export interface Player {
 }
 
 export function createPlayer(k: KAPLAYCtx, character: CharacterId = "ninja"): Player {
+  const def = CHARACTER_DEFS[character];
   const obj = k.add([
-    k.sprite(CHARACTER_SPRITES[character], { frame: 0 }),
+    k.sprite(def.spriteKey, { frame: 0 }),
     k.pos(0, 0),
     k.anchor("center"),
     k.scale(2),
@@ -49,7 +40,7 @@ export function createPlayer(k: KAPLAYCtx, character: CharacterId = "ninja"): Pl
     speedBuffExpiresMs: 0,
     activeItem: null,
     activeItemCooldownMs: 0,
-    weapons: [CHARACTER_STARTING_WEAPONS[character]],
+    weapons: [def.startingWeapon],
     upgrades: {},
     gear: {},
   };

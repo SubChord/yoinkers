@@ -11,6 +11,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from "./config/GameConfig";
 import { GEAR_DEFS } from "./config/GearDefs";
 import { ITEM_DEFS } from "./config/ItemDefs";
 import { MUSIC_TRACKS } from "./config/MusicDefs";
+import { registerCharactersScene } from "./scenes/CharactersScene";
 import { registerEndScene } from "./scenes/EndScene";
 import { registerGameScene } from "./scenes/GameScene";
 import { registerGuideScene } from "./scenes/GuideScene";
@@ -140,5 +141,6 @@ registerStatsScene(k);
 registerGuideScene(k);
 registerMapSelectScene(k);
 registerShopScene(k);
+registerCharactersScene(k);
 
 k.go("menu");

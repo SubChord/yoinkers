@@ -30,6 +30,7 @@ export interface SaveData {
   metaUpgrades: Partial<Record<MetaUpgradeId, number>>;
   lastYoinksEarned: number;
   selectedCharacter: CharacterId;
+  unlockedCharacters: CharacterId[];
 }
 
 const EMPTY_SAVE: SaveData = {
@@ -52,6 +53,7 @@ const EMPTY_SAVE: SaveData = {
   metaUpgrades: {},
   lastYoinksEarned: 0,
   selectedCharacter: "ninja",
+  unlockedCharacters: ["ninja"],
 };
 
 export function loadSave(): SaveData {
@@ -70,7 +72,14 @@ export function loadSave(): SaveData {
       lifetimeYoinks: Math.max(0, Math.floor(parsed.lifetimeYoinks ?? 0)),
       metaUpgrades: sanitizeMetaUpgrades(parsed.metaUpgrades),
       lastYoinksEarned: Math.max(0, Math.floor(parsed.lastYoinksEarned ?? 0)),
-      selectedCharacter: sanitizeCharacter(parsed.selectedCharacter, parsed.metaUpgrades),
+      unlockedCharacters: sanitizeUnlockedCharacters(
+        parsed.unlockedCharacters,
+        parsed.metaUpgrades,
+      ),
+      selectedCharacter: sanitizeCharacter(
+        parsed.selectedCharacter,
+        sanitizeUnlockedCharacters(parsed.unlockedCharacters, parsed.metaUpgrades),
+      ),
     };
   } catch {
     return cloneEmpty();
@@ -195,9 +204,24 @@ export function setSelectedCharacter(id: CharacterId): void {
 }
 
 export function isCharacterUnlocked(save: SaveData, id: CharacterId): boolean {
-  if (id === "ninja") return true;
-  if (id === "jesus") return (save.metaUpgrades["unlock-jesus"] ?? 0) >= 1;
-  return false;
+  return save.unlockedCharacters.includes(id);
+}
+
+export function purchaseCharacterUnlock(id: CharacterId, cost: number): SaveData {
+  const current = loadSave();
+  if (isCharacterUnlocked(current, id)) return current;
+  if (current.yoinks < cost) return current;
+  const next: SaveData = {
+    ...current,
+    yoinks: current.yoinks - cost,
+    unlockedCharacters: [...current.unlockedCharacters, id],
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+  return next;
 }
 
 export function resetSave(): SaveData {
@@ -267,8 +291,25 @@ function sanitizeMapId(value: MapId | undefined, fallback: MapId): MapId {
 
 function sanitizeCharacter(
   value: CharacterId | undefined,
-  metaUpgrades: Partial<Record<MetaUpgradeId, number>> | undefined,
+  unlockedCharacters: CharacterId[],
 ): CharacterId {
-  if (value === "jesus" && (metaUpgrades?.["unlock-jesus"] ?? 0) >= 1) return "jesus";
+  if (value && unlockedCharacters.includes(value)) return value;
   return "ninja";
+}
+
+const VALID_CHARACTERS: CharacterId[] = ["ninja", "jesus"];
+
+function sanitizeUnlockedCharacters(
+  value: CharacterId[] | undefined,
+  legacyMetaUpgrades: Partial<Record<string, number>> | undefined,
+): CharacterId[] {
+  const set = new Set<CharacterId>(["ninja"]);
+  if (Array.isArray(value)) {
+    for (const id of value) {
+      if (VALID_CHARACTERS.includes(id)) set.add(id);
+    }
+  }
+  // Migration: older saves stored the Jesus unlock as a meta upgrade.
+  if ((legacyMetaUpgrades?.["unlock-jesus"] ?? 0) >= 1) set.add("jesus");
+  return Array.from(set);
 }
