@@ -128,7 +128,7 @@ export function popLabel(k: KAPLAYCtx, opts: LabelOpts): void {
     if (elapsed < popDur) {
       const sp = elapsed / popDur;
       const s = popScale + (1 - popScale) * sp;
-      (label as any).scale = k.vec2(s, s);
+      (label as any).scaleTo(s);
     }
 
     (label as any).opacity = Math.max(0, 1 - elapsed / duration);
@@ -181,7 +181,7 @@ export function impactVfx(k: KAPLAYCtx, opts: ImpactOpts): void {
   flash.onUpdate(() => {
     t += k.dt();
     const p = Math.min(t / dur, 1);
-    (flash as any).scale = k.vec2(0.3 + 0.7 * p, 0.3 + 0.7 * p);
+    (flash as any).scaleTo(0.3 + 0.7 * p);
     (flash as any).opacity = startOpacity * (1 - p);
     if (p >= 1) flash.destroy();
   });

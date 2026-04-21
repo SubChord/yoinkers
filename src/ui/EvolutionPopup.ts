@@ -145,23 +145,11 @@ export function showEvolutionPopup(k: KAPLAYCtx, opts: EvolutionPopupOpts): void
     }
 
     const pulse = 1 + Math.sin(elapsed * 0.012) * 0.05;
-    (rays as unknown as { scale: { x: number; y: number } }).scale = {
-      x: rayScale.value * pulse,
-      y: rayScale.value * pulse,
-    };
-    (panel as unknown as { scale: { x: number; y: number } }).scale = {
-      x: panelScale.value,
-      y: panelScale.value,
-    };
-    (sprite as unknown as { scale: { x: number; y: number } }).scale = {
-      x: spriteScale.value * pulse,
-      y: spriteScale.value * pulse,
-    };
+    (rays as any).scaleTo(rayScale.value * pulse);
+    (panel as any).scaleTo(panelScale.value);
+    (sprite as any).scaleTo(spriteScale.value * pulse);
     sprite.angle = ((sprite.angle ?? 0) + k.dt() * 540) % 360;
-    (flash as unknown as { scale: { x: number; y: number } }).scale = {
-      x: 1 + Math.sin(elapsed * 0.018) * 0.05,
-      y: 1 + Math.sin(elapsed * 0.018) * 0.05,
-    };
+    (flash as any).scaleTo(1 + Math.sin(elapsed * 0.018) * 0.05);
 
     if (progress >= 1) {
       for (const obj of created) obj.destroy();

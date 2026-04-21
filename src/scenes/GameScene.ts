@@ -223,7 +223,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
 
     k.onUpdate(() => {
       const nowMs = Date.now();
-      k.camPos(player.obj.pos);
+      k.setCamPos(player.obj.pos);
 
       if (state.paused) {
         return;

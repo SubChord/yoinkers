@@ -126,7 +126,7 @@ export function playDeathAnim(k: KAPLAYCtx, enemy: Enemy): void {
 
     // shrink
     const s = startScale * (1 - p * 0.8);
-    (obj as any).scale = k.vec2(s, s);
+    (obj as any).scaleTo(s);
 
     // spin
     (obj as any).angle = ((obj as any).angle ?? 0) + k.dt() * 600;
