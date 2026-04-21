@@ -84,5 +84,4 @@ Deploy: push to `main` → GitHub Action builds `./dist` → push to `gh-pages` 
 - Win = survive 900s (`GAME_DURATION_MS`). Loss = `hp <= 0`.
 - "Yoinks" = persistent post-run currency spent in `ShopScene` on meta upgrades.
 - XP curve: `xpForLevel(level)` in `GameConfig.ts`. Array entries for levels 0-9, then `last * 1.2^(level - 9)` past the array.
-- `checkEvolutions` at `GameScene.ts:171` still contains 3 `console.log("[EVO] ...")` debug statements (lines 177, 178, 189). Remove when the samurai-sword/evolution flow is considered stable.
 - Mobile detection is one-time at scene mount (`isTouchDevice()` in `GameScene.ts:94`). Rotating from touch to non-touch mid-scene won't teardown mobile UI.

@@ -75,10 +75,7 @@ export class WeaponSystem {
   }
 
   private fireWeapon(weaponId: WeaponId, nowMs: number): void {
-    try {
-      console.log(`[WS] fireWeapon: ${weaponId}`);
-      const stats = this.computeStats(weaponId);
-      console.log(`[WS] stats computed for ${weaponId}:`, JSON.stringify(stats));
+    const stats = this.computeStats(weaponId);
     const state = this.weaponStates.get(weaponId) ?? { lastFireMs: -Number.MAX_SAFE_INTEGER };
     this.weaponStates.set(weaponId, state);
 
@@ -137,9 +134,6 @@ export class WeaponSystem {
       case "samuraiSword":
         this.fireSamuraiSlash(stats);
         break;
-    }
-    } catch (err) {
-      console.error(`[WS] fireWeapon CRASH for ${weaponId}:`, err);
     }
   }
 
@@ -464,7 +458,6 @@ export class WeaponSystem {
     stats: WeaponStats,
     opts: { radius: number; speed: number; scale: number },
   ): void {
-    console.log(`[WS] ensureOrbit: ${weaponId}, count=${stats.count}, sprite=${WEAPON_DEFS[weaponId].spriteKey}`);
     const existing = this.projectiles.filter((p) => p.kind === "orbit" && p.weapon === weaponId);
     const target = Math.max(1, stats.count);
 
@@ -513,7 +506,7 @@ export class WeaponSystem {
     for (let i = this.projectiles.length - 1; i >= 0; i -= 1) {
       const p = this.projectiles[i];
 
-      try {      if (p.kind === "orbit") {
+      if (p.kind === "orbit") {
         this.updateOrbit(p, dt);
         this.checkPersistentHits(p, nowMs, MAGIC_ORB_HIT_COOLDOWN_MS);
         continue;
@@ -602,9 +595,6 @@ export class WeaponSystem {
           p.obj.destroy();
           this.projectiles.splice(i, 1);
         }
-      }
-      } catch (err) {
-        console.error(`[WS] updateProjectiles CRASH for weapon=${p.weapon}, kind=${p.kind}:`, err);
       }
     }
   }
