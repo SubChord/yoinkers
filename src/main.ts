@@ -1,3 +1,6 @@
+declare const __COMMIT_HASH__: string;
+console.log(`%c[yoinkers] build ${__COMMIT_HASH__}`, "color: #0f0; font-weight: bold");
+
 import kaplay from "kaplay";
 import {
   buildHolyBeamDataURL,
