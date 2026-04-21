@@ -60,25 +60,25 @@ export function registerMenuScene(k: KAPLAYCtx): void {
     });
     startBtn.onClick(start);
 
-    const mapsBtn = makeMenuButton(k, "MAPS", 140, 46, GAME_WIDTH / 2 - 300, 510, {
+    const mapsBtn = makeMenuButton(k, "MAPS", 140, 46, GAME_WIDTH / 2 - 225, 510, {
       bg: [64, 96, 130],
       outline: [180, 210, 244],
     });
     mapsBtn.onClick(() => k.go("maps"));
 
-    const shopBtn = makeMenuButton(k, "SHOP", 140, 46, GAME_WIDTH / 2 - 150, 510, {
+    const shopBtn = makeMenuButton(k, "SHOP", 140, 46, GAME_WIDTH / 2 - 75, 510, {
       bg: [110, 88, 42],
       outline: [244, 220, 150],
     });
     shopBtn.onClick(() => k.go("shop"));
 
-    const statsBtn = makeMenuButton(k, "STATS", 140, 46, GAME_WIDTH / 2, 510, {
+    const statsBtn = makeMenuButton(k, "STATS", 140, 46, GAME_WIDTH / 2 + 75, 510, {
       bg: [44, 80, 100],
       outline: [180, 210, 230],
     });
     statsBtn.onClick(() => k.go("stats"));
 
-    const guideBtn = makeMenuButton(k, "GUIDE", 140, 46, GAME_WIDTH / 2 + 150, 510, {
+    const guideBtn = makeMenuButton(k, "GUIDE", 140, 46, GAME_WIDTH / 2 + 225, 510, {
       bg: [90, 62, 118],
       outline: [210, 180, 230],
     });
