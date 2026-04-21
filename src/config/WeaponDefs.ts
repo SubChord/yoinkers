@@ -17,7 +17,12 @@ export type WeaponId =
   | "holyBeam"
   | "holyWater"
   | "judasPriest"
-  | "laserPointer";
+  | "laserPointer"
+  | "frostbolt"
+  | "poisonCloud"
+  | "crossbow"
+  | "chainLightning"
+  | "homingShuriken";
 
 export interface WeaponStats {
   damage: number;
@@ -169,6 +174,41 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     description: "A chaotic red dot that pierces everything — her cats chase it to death.",
     spriteKey: "laser-dot",
     base: { damage: 10, cooldownMs: 280, speed: 900, range: 520, count: 1, area: 14 },
+  },
+  frostbolt: {
+    id: "frostbolt",
+    label: "Frostbolt",
+    description: "Icy shard that staggers enemies on impact, slowing them for 1.5s.",
+    spriteKey: "frostbolt",
+    base: { damage: 16, cooldownMs: 900, speed: 420, range: 440, count: 1, area: 18 },
+  },
+  poisonCloud: {
+    id: "poisonCloud",
+    label: "Poison Cloud",
+    description: "Noxious green fog that lingers and rots anything that walks through it.",
+    spriteKey: "poison-cloud",
+    base: { damage: 7, cooldownMs: 3500, speed: 0, range: 0, count: 1, area: 60 },
+  },
+  crossbow: {
+    id: "crossbow",
+    label: "Crossbow",
+    description: "Slow, heavy bolt that punches through two enemies.",
+    spriteKey: "crossbow-bolt",
+    base: { damage: 70, cooldownMs: 1800, speed: 680, range: 620, count: 1, area: 16 },
+  },
+  chainLightning: {
+    id: "chainLightning",
+    label: "Chain Lightning",
+    description: "A yellow bolt that arcs between up to four nearby enemies.",
+    spriteKey: "chain-bolt",
+    base: { damage: 20, cooldownMs: 1200, speed: 0, range: 180, count: 2, area: 0 },
+  },
+  homingShuriken: {
+    id: "homingShuriken",
+    label: "Homing Shuriken",
+    description: "A cursed star that curves toward its target — cannot miss.",
+    spriteKey: "shuriken",
+    base: { damage: 22, cooldownMs: 950, speed: 380, range: 560, count: 1, area: 22 },
   },
 };
 

@@ -350,6 +350,106 @@ export function buildLaserDotDataURL(): string {
   return canvas.toDataURL("image/png");
 }
 
+/** 12x12 icy shard with a white core. */
+export function buildFrostboltDataURL(): string {
+  const [canvas, ctx] = newCanvas(12, 12);
+  // Outer glow
+  const grad = ctx.createRadialGradient(6, 6, 1, 6, 6, 6);
+  grad.addColorStop(0, "rgba(240, 250, 255, 1)");
+  grad.addColorStop(0.5, "rgba(120, 200, 255, 0.9)");
+  grad.addColorStop(1, "rgba(50, 120, 220, 0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 12, 12);
+  // Diamond shard
+  ctx.fillStyle = "#dff4ff";
+  ctx.beginPath();
+  ctx.moveTo(6, 1);
+  ctx.lineTo(10, 6);
+  ctx.lineTo(6, 11);
+  ctx.lineTo(2, 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(5, 4, 2, 4);
+  return canvas.toDataURL("image/png");
+}
+
+/** 28x28 sickly green cloud with darker blotches. */
+export function buildPoisonCloudDataURL(): string {
+  const [canvas, ctx] = newCanvas(28, 28);
+  const grad = ctx.createRadialGradient(14, 14, 2, 14, 14, 14);
+  grad.addColorStop(0, "rgba(180, 240, 120, 0.9)");
+  grad.addColorStop(0.6, "rgba(80, 180, 60, 0.7)");
+  grad.addColorStop(1, "rgba(40, 90, 30, 0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 28, 28);
+  // Darker blotches
+  ctx.fillStyle = "rgba(40, 90, 30, 0.55)";
+  ctx.beginPath(); ctx.ellipse(10, 16, 3, 2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(19, 11, 3, 2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(16, 19, 2, 2, 0, 0, Math.PI * 2); ctx.fill();
+  // Tiny skull hint
+  ctx.fillStyle = "rgba(240, 250, 200, 0.5)";
+  ctx.fillRect(13, 12, 2, 2);
+  ctx.fillRect(12, 15, 1, 1);
+  ctx.fillRect(15, 15, 1, 1);
+  return canvas.toDataURL("image/png");
+}
+
+/** 20x6 crossbow bolt — brown shaft, gray tip, pale fletching. */
+export function buildCrossbowBoltDataURL(): string {
+  const [canvas, ctx] = newCanvas(20, 6);
+  // Shaft
+  ctx.fillStyle = "#8a5a2a";
+  ctx.fillRect(3, 2, 13, 2);
+  ctx.fillStyle = "#6a4018";
+  ctx.fillRect(3, 3, 13, 1);
+  // Tip
+  ctx.fillStyle = "#b8bcc4";
+  ctx.beginPath();
+  ctx.moveTo(16, 0);
+  ctx.lineTo(20, 3);
+  ctx.lineTo(16, 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#e4e8ee";
+  ctx.fillRect(17, 2, 2, 2);
+  // Fletching
+  ctx.fillStyle = "#e8e0c8";
+  ctx.fillRect(0, 1, 3, 4);
+  ctx.fillStyle = "#a8906a";
+  ctx.fillRect(0, 2, 3, 2);
+  return canvas.toDataURL("image/png");
+}
+
+/** 14x14 yellow lightning bolt. */
+export function buildChainBoltDataURL(): string {
+  const [canvas, ctx] = newCanvas(14, 14);
+  // Glow halo
+  const grad = ctx.createRadialGradient(7, 7, 1, 7, 7, 7);
+  grad.addColorStop(0, "rgba(255, 255, 200, 1)");
+  grad.addColorStop(0.5, "rgba(255, 220, 60, 0.7)");
+  grad.addColorStop(1, "rgba(255, 180, 0, 0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 14, 14);
+  // Zigzag bolt
+  ctx.fillStyle = "#fff3a8";
+  ctx.beginPath();
+  ctx.moveTo(8, 1);
+  ctx.lineTo(4, 7);
+  ctx.lineTo(7, 7);
+  ctx.lineTo(5, 13);
+  ctx.lineTo(10, 6);
+  ctx.lineTo(7, 6);
+  ctx.lineTo(9, 1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#ffaa00";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  return canvas.toDataURL("image/png");
+}
+
 /** 32x8 golden beam, single frame. */
 export function buildHolyBeamDataURL(): string {
   const [canvas, ctx] = newCanvas(32, 8);

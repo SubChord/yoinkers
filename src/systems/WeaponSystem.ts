@@ -15,6 +15,13 @@ const FIRE_TRAIL_LIFETIME_MS = 4000;
 const FIRE_TRAIL_DROP_DIST = 28;
 const FIRE_ARROW_BONUS_MULT = 1.5;
 
+const POISON_CLOUD_LIFETIME_MS = 7000;
+const POISON_CLOUD_HIT_COOLDOWN_MS = 600;
+const FROSTBOLT_SLOW_MS = 1500;
+const FROSTBOLT_SLOW_MULT = 0.4;
+const HOMING_TURN_RATE = 4.5; // how fast the shuriken steers toward its target
+const CHAIN_RANGE = 180; // max distance between consecutive chain jumps
+
 const SAMURAI_SPREAD = Math.PI * 0.9;
 const SAMURAI_RADIUS = 52;
 const SAMURAI_REACH = 88;
@@ -151,7 +158,233 @@ export class WeaponSystem {
       case "laserPointer":
         this.fireLaserPointer(stats);
         break;
+      case "frostbolt":
+        this.fireFrostbolt(stats);
+        break;
+      case "poisonCloud":
+        this.dropPoisonCloud(stats);
+        break;
+      case "crossbow":
+        this.fireCrossbow(stats);
+        break;
+      case "chainLightning":
+        this.fireChainLightning(stats, nowMs);
+        break;
+      case "homingShuriken":
+        this.fireHomingShuriken(stats);
+        break;
     }
+  }
+
+  private fireFrostbolt(stats: WeaponStats): void {
+    const p = this.player.obj.pos;
+    const target = this.spawner.nearest(p.x, p.y);
+    const baseDir = target
+      ? this.k.vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y).unit()
+      : this.k.vec2(1, 0);
+    const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    for (let i = 0; i < stats.count; i += 1) {
+      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.18;
+      const angle = baseAngle + offset;
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "linear",
+          weapon: "frostbolt",
+          sprite: WEAPON_DEFS.frostbolt.spriteKey,
+          x: p.x,
+          y: p.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+        }),
+      );
+    }
+  }
+
+  private dropPoisonCloud(stats: WeaponStats): void {
+    const cx = this.player.obj.pos.x;
+    const cy = this.player.obj.pos.y;
+    for (let i = 0; i < stats.count; i += 1) {
+      const jitter = stats.count > 1 ? 40 : 0;
+      const ox = stats.count === 1 ? 0 : this.k.rand(-jitter, jitter);
+      const oy = stats.count === 1 ? 0 : this.k.rand(-jitter, jitter);
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "ground",
+          weapon: "poisonCloud",
+          sprite: WEAPON_DEFS.poisonCloud.spriteKey,
+          x: cx + ox,
+          y: cy + oy,
+          dir: this.k.vec2(1, 0),
+          speed: 0,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: 0,
+          lifetimeMs: POISON_CLOUD_LIFETIME_MS,
+          scale: 2.5,
+        }),
+      );
+    }
+  }
+
+  private fireCrossbow(stats: WeaponStats): void {
+    const p = this.player.obj.pos;
+    const target = this.spawner.nearest(p.x, p.y);
+    if (!target) return;
+    const baseDir = this.k
+      .vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y)
+      .unit();
+    const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    for (let i = 0; i < stats.count; i += 1) {
+      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.1;
+      const angle = baseAngle + offset;
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "pierce",
+          weapon: "crossbow",
+          sprite: WEAPON_DEFS.crossbow.spriteKey,
+          x: p.x,
+          y: p.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+          piercesLeft: 2,
+          rotationOffset: 0,
+          scale: 2.2,
+        }),
+      );
+    }
+  }
+
+  private fireHomingShuriken(stats: WeaponStats): void {
+    const p = this.player.obj.pos;
+    const target = this.spawner.nearest(p.x, p.y);
+    const baseDir = target
+      ? this.k.vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y).unit()
+      : this.k.vec2(1, 0);
+    const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    for (let i = 0; i < stats.count; i += 1) {
+      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.6;
+      const angle = baseAngle + offset;
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "linear",
+          weapon: "homingShuriken",
+          sprite: WEAPON_DEFS.homingShuriken.spriteKey,
+          x: p.x,
+          y: p.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+        }),
+      );
+    }
+  }
+
+  private fireChainLightning(stats: WeaponStats, nowMs: number): void {
+    const p = this.player.obj.pos;
+    const first = this.spawner.nearest(p.x, p.y);
+    if (!first) return;
+
+    const maxJumps = 2 + stats.count; // base 2 count + upgrades
+    const hit = new Set<number>();
+    let prevX = p.x;
+    let prevY = p.y;
+    let next: Enemy | null = first;
+
+    for (let jump = 0; jump < maxJumps && next; jump += 1) {
+      const enemyIndex = this.spawner.enemies.indexOf(next);
+      if (enemyIndex < 0) break;
+
+      // Diminishing damage on each jump
+      const damage = Math.floor(stats.damage * Math.pow(0.8, jump));
+      this.dealInstantDamage("chainLightning", damage, enemyIndex, [255, 230, 120]);
+      hit.add(enemyIndex);
+
+      this.spawnChainArc(prevX, prevY, next.obj.pos.x, next.obj.pos.y);
+
+      prevX = next.obj.pos.x;
+      prevY = next.obj.pos.y;
+      next = this.findNextChainTarget(prevX, prevY, hit);
+    }
+
+    void nowMs;
+  }
+
+  private findNextChainTarget(
+    fromX: number,
+    fromY: number,
+    excluded: Set<number>,
+  ): Enemy | null {
+    let best: Enemy | null = null;
+    let bestD2 = CHAIN_RANGE * CHAIN_RANGE;
+    for (let j = 0; j < this.spawner.enemies.length; j += 1) {
+      if (excluded.has(j)) continue;
+      const e = this.spawner.enemies[j];
+      const dx = e.obj.pos.x - fromX;
+      const dy = e.obj.pos.y - fromY;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = e;
+      }
+    }
+    return best;
+  }
+
+  private spawnChainArc(x1: number, y1: number, x2: number, y2: number): void {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 1) return;
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    const arc = this.k.add([
+      this.k.rect(len, 3),
+      this.k.pos(x1, y1),
+      this.k.anchor("left"),
+      this.k.rotate(angle),
+      this.k.color(255, 235, 140),
+      this.k.opacity(0.9),
+      this.k.z(6),
+    ]);
+    let t = 0;
+    arc.onUpdate(() => {
+      t += this.k.dt();
+      (arc as unknown as { opacity: number }).opacity = Math.max(0, 0.9 - t * 5);
+      if (t > 0.18) arc.destroy();
+    });
+  }
+
+  private dealInstantDamage(
+    weapon: WeaponId,
+    damage: number,
+    enemyIndex: number,
+    color: [number, number, number],
+  ): void {
+    const enemy = this.spawner.enemies[enemyIndex];
+    if (!enemy) return;
+    const applied = Math.min(enemy.hp, damage);
+    enemy.hp -= damage;
+    this.stats.record(weapon, applied);
+    this.onDamageDealt(applied);
+    const killed = enemy.hp <= 0;
+    impactVfx(this.k, {
+      x: enemy.obj.pos.x,
+      y: enemy.obj.pos.y,
+      color,
+      kill: killed,
+    });
+    if (killed) this.onEnemyDeath(enemy, enemyIndex);
+    else this.onEnemyHit();
   }
 
   private fireJudasPriest(stats: WeaponStats): void {
@@ -659,7 +892,12 @@ export class WeaponSystem {
           this.checkSamuraiSlashHits(p);
           this.checkBossHit(p);
         } else {
-          const cooldown = p.weapon === "fireTrail" ? FIRE_TRAIL_HIT_COOLDOWN_MS : CALTROP_HIT_COOLDOWN_MS;
+          const cooldown =
+            p.weapon === "fireTrail"
+              ? FIRE_TRAIL_HIT_COOLDOWN_MS
+              : p.weapon === "poisonCloud"
+                ? POISON_CLOUD_HIT_COOLDOWN_MS
+                : CALTROP_HIT_COOLDOWN_MS;
           this.checkPersistentHits(p, nowMs, cooldown);
           this.checkBossHit(p);
         }
@@ -668,6 +906,10 @@ export class WeaponSystem {
           const lifeRatio = p.elapsedMs / (p.lifetimeMs || 1);
           const flicker = 0.6 + 0.25 * Math.sin(nowMs * 0.012 + p.originX);
           p.obj.opacity = flicker * (1 - lifeRatio * 0.7);
+        } else if (p.weapon === "poisonCloud") {
+          const lifeRatio = p.elapsedMs / (p.lifetimeMs || 1);
+          const pulse = 0.75 + 0.15 * Math.sin(nowMs * 0.006 + p.originX);
+          p.obj.opacity = pulse * (1 - lifeRatio * 0.9);
         }
 
         if (p.lifetimeMs > 0 && p.elapsedMs >= p.lifetimeMs) {
@@ -696,6 +938,23 @@ export class WeaponSystem {
         (p.obj as { angle?: number }).angle =
           Math.atan2(p.dir.y, p.dir.x) * (180 / Math.PI) + p.rotationOffset;
       } else {
+        if (p.weapon === "homingShuriken") {
+          const t = this.spawner.nearest(p.obj.pos.x, p.obj.pos.y);
+          if (t) {
+            const tx = t.obj.pos.x - p.obj.pos.x;
+            const ty = t.obj.pos.y - p.obj.pos.y;
+            const len = Math.hypot(tx, ty) || 1;
+            const desiredX = tx / len;
+            const desiredY = ty / len;
+            const blend = Math.min(1, HOMING_TURN_RATE * dt);
+            const blended = this.k.vec2(
+              p.dir.x * (1 - blend) + desiredX * blend,
+              p.dir.y * (1 - blend) + desiredY * blend,
+            );
+            const blendedLen = Math.hypot(blended.x, blended.y) || 1;
+            p.dir = this.k.vec2(blended.x / blendedLen, blended.y / blendedLen);
+          }
+        }
         const step = p.dir.scale(p.speed * dt);
         p.obj.pos = p.obj.pos.add(step);
         p.distance += step.len();
@@ -751,6 +1010,11 @@ export class WeaponSystem {
     this.stats.record(p.weapon, damage);
     this.onDamageDealt(damage);
     const killed = enemy.hp <= 0;
+
+    if (p.weapon === "frostbolt" && !killed) {
+      enemy.slowMult = FROSTBOLT_SLOW_MULT;
+      enemy.slowExpiresMs = Date.now() + FROSTBOLT_SLOW_MS;
+    }
 
     impactVfx(this.k, {
       x: enemy.obj.pos.x,
@@ -912,6 +1176,11 @@ const WEAPON_HIT_COLORS: Partial<Record<WeaponId, [number, number, number]>> = {
   holyBeam: [255, 245, 180],
   holyWater: [140, 220, 255],
   laserPointer: [255, 60, 60],
+  frostbolt: [180, 230, 255],
+  poisonCloud: [140, 220, 120],
+  crossbow: [220, 200, 150],
+  chainLightning: [255, 235, 120],
+  homingShuriken: [220, 220, 255],
 };
 
 function enemyId(enemy: Enemy): number {
@@ -940,5 +1209,10 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "holyWater": return 4;
     case "judasPriest": return 6;
     case "laserPointer": return 4;
+    case "frostbolt": return 6;
+    case "poisonCloud": return 3;
+    case "crossbow": return 18;
+    case "chainLightning": return 6;
+    case "homingShuriken": return 8;
   }
 }

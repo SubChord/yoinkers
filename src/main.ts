@@ -4,11 +4,15 @@ console.log(`%c[yoinkers] build ${__COMMIT_HASH__}`, "color: #0f0; font-weight: 
 import kaplay from "kaplay";
 import {
   buildCatLadyWalkDataURL,
+  buildChainBoltDataURL,
+  buildCrossbowBoltDataURL,
+  buildFrostboltDataURL,
   buildGuitarDataURL,
   buildHolyBeamDataURL,
   buildHolyWaterDataURL,
   buildJesusWalkDataURL,
   buildLaserDotDataURL,
+  buildPoisonCloudDataURL,
   buildPoophoodDataURL,
   buildShockwaveDataURL,
 } from "./assets/SpriteGen";
@@ -122,6 +126,10 @@ k.loadSprite("fire-ground", "assets/Items/Weapon/fire-ground.png");
 k.loadSprite("holy-beam", buildHolyBeamDataURL());
 k.loadSprite("holy-water", buildHolyWaterDataURL());
 k.loadSprite("laser-dot", buildLaserDotDataURL());
+k.loadSprite("frostbolt", buildFrostboltDataURL());
+k.loadSprite("poison-cloud", buildPoisonCloudDataURL());
+k.loadSprite("crossbow-bolt", buildCrossbowBoltDataURL());
+k.loadSprite("chain-bolt", buildChainBoltDataURL());
 k.loadSprite("cosmetic-poophood", buildPoophoodDataURL());
 k.loadSprite("cosmetic-guitar", buildGuitarDataURL());
 k.loadSprite("weapon-shockwave", buildShockwaveDataURL());
