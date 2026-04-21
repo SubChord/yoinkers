@@ -15,6 +15,15 @@ export const BASE_PICKUP_RANGE = 22;
 
 export const XP_PER_LEVEL = [50, 120, 220, 360, 550, 760, 1000, 1280, 1600, 1960];
 
+const XP_POST_ARRAY_GROWTH = 1.2;
+
+export function xpForLevel(level: number): number {
+  if (level < XP_PER_LEVEL.length) return XP_PER_LEVEL[level];
+  const last = XP_PER_LEVEL[XP_PER_LEVEL.length - 1];
+  const extra = level - (XP_PER_LEVEL.length - 1);
+  return Math.round(last * Math.pow(XP_POST_ARRAY_GROWTH, extra));
+}
+
 export const SPAWN_MIN_RADIUS = 320;
 export const SPAWN_MAX_RADIUS = 460;
 export const ENEMY_WAVE_BASE_COUNT = 5;

@@ -4,7 +4,7 @@ import {
   PLAYER_IFRAME_MS,
   WAVE_DURATION_MS,
   WORLD_SIZE,
-  XP_PER_LEVEL,
+  xpForLevel,
 } from "../config/GameConfig";
 import type { GearId } from "../config/GearDefs";
 import { MAP_DEFS, type MapId } from "../config/MapDefs";
@@ -485,7 +485,7 @@ function maybeLevelUp(
   state: { levelQueue: number },
   quests: QuestSystem,
 ): void {
-  let threshold = XP_PER_LEVEL[Math.min(player.stats.level, XP_PER_LEVEL.length - 1)];
+  let threshold = xpForLevel(player.stats.level);
   while (player.stats.xp >= threshold) {
     player.stats.xp -= threshold;
     player.stats.level += 1;
@@ -493,7 +493,7 @@ function maybeLevelUp(
     player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + 5);
     state.levelQueue += 1;
     quests.onLevel(player.stats.level);
-    threshold = XP_PER_LEVEL[Math.min(player.stats.level, XP_PER_LEVEL.length - 1)];
+    threshold = xpForLevel(player.stats.level);
   }
 }
 

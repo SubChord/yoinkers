@@ -1,5 +1,5 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
-import { GAME_WIDTH, SCORE_WAVE_MULTIPLIER, XP_PER_LEVEL } from "../config/GameConfig";
+import { GAME_WIDTH, SCORE_WAVE_MULTIPLIER, xpForLevel } from "../config/GameConfig";
 import { GEAR_DEFS, GEAR_IDS, type GearId } from "../config/GearDefs";
 import type { Player } from "../entities/Player";
 import type { ActiveItemId } from "../types/GameTypes";
@@ -98,7 +98,7 @@ export interface HudState {
 
 export function updateHud(refs: HudRefs, state: HudState): void {
   const s = state.player.stats;
-  const nextThreshold = XP_PER_LEVEL[Math.min(s.level, XP_PER_LEVEL.length - 1)];
+  const nextThreshold = xpForLevel(s.level);
 
   setText(refs.hpText, `HP: ${Math.ceil(s.hp)} / ${s.maxHp}`);
   setText(refs.xpText, `XP: ${Math.floor(s.xp)} / ${nextThreshold}  Lv ${s.level + 1}`);
