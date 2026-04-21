@@ -1,7 +1,13 @@
 import type { KAPLAYCtx, GameObj, Vec2 } from "kaplay";
 import type { WeaponId } from "../config/WeaponDefs";
 
-export type ProjectileKind = "linear" | "boomerang" | "orbit";
+export type ProjectileKind =
+  | "linear"
+  | "boomerang"
+  | "orbit"
+  | "pierce"
+  | "bomb"
+  | "ground";
 
 export interface Projectile {
   obj: GameObj;
@@ -19,6 +25,9 @@ export interface Projectile {
   orbitAngle: number;
   orbitRadius: number;
   orbitSpeed: number;
+  piercesLeft: number;
+  lifetimeMs: number;
+  elapsedMs: number;
   hitCooldownsMs: Map<number, number>;
 }
 
@@ -36,17 +45,23 @@ export interface ProjectileSpawnOpts {
   orbitAngle?: number;
   orbitRadius?: number;
   orbitSpeed?: number;
+  piercesLeft?: number;
+  lifetimeMs?: number;
+  scale?: number;
 }
 
 export function spawnProjectile(k: KAPLAYCtx, opts: ProjectileSpawnOpts): Projectile {
   const rotation = Math.atan2(opts.dir.y, opts.dir.x) * (180 / Math.PI);
+  const rotatable =
+    opts.kind === "linear" || opts.kind === "pierce" || opts.kind === "boomerang";
+
   const obj = k.add([
     k.sprite(opts.sprite, opts.kind === "orbit" ? { anim: "spin" } : { frame: 0 }),
     k.pos(opts.x, opts.y),
     k.anchor("center"),
-    k.scale(opts.kind === "orbit" ? 1.5 : 2),
-    k.rotate(opts.kind === "orbit" ? 0 : rotation),
-    k.z(7),
+    k.scale(opts.scale ?? (opts.kind === "orbit" ? 1.5 : 2)),
+    k.rotate(rotatable ? rotation : 0),
+    k.z(opts.kind === "ground" ? 2 : 7),
   ]);
 
   return {
@@ -65,6 +80,9 @@ export function spawnProjectile(k: KAPLAYCtx, opts: ProjectileSpawnOpts): Projec
     orbitAngle: opts.orbitAngle ?? 0,
     orbitRadius: opts.orbitRadius ?? 48,
     orbitSpeed: opts.orbitSpeed ?? 2.5,
+    piercesLeft: opts.piercesLeft ?? 0,
+    lifetimeMs: opts.lifetimeMs ?? 0,
+    elapsedMs: 0,
     hitCooldownsMs: new Map(),
   };
 }

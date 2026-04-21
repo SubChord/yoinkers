@@ -26,4 +26,6 @@ export interface EndStats {
   level: number;
   wave: number;
   timeSurvivedMs: number;
+  damageByWeapon: Record<string, number>;
+  totalDamage: number;
 }

@@ -2,13 +2,13 @@ import type { KAPLAYCtx } from "kaplay";
 import { WEAPON_DEFS, type WeaponId, type WeaponStats } from "../config/WeaponDefs";
 import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
-import {
-  spawnProjectile,
-  type Projectile,
-} from "../entities/Projectile";
+import { spawnProjectile, type Projectile } from "../entities/Projectile";
 import type { EnemySpawner } from "./EnemySpawner";
+import type { StatsTracker } from "./StatsTracker";
 
 const MAGIC_ORB_HIT_COOLDOWN_MS = 500;
+const CALTROP_HIT_COOLDOWN_MS = 400;
+const CALTROP_LIFETIME_MS = 6000;
 
 interface WeaponState {
   lastFireMs: number;
@@ -24,6 +24,7 @@ export class WeaponSystem {
     private spawner: EnemySpawner,
     private onEnemyDeath: (enemy: Enemy, index: number) => void,
     private onEnemyHit: () => void,
+    private stats: StatsTracker,
   ) {}
 
   public update(nowMs: number, dt: number): void {
@@ -40,8 +41,7 @@ export class WeaponSystem {
     const cooldownLevel = upgrades[`${weaponId}-cooldown`] ?? 0;
     const countLevel = upgrades[`${weaponId}-count`] ?? 0;
 
-    const damageBonus =
-      weaponId === "shuriken" ? level * 6 : weaponId === "boomerang" ? level * 8 : level * 4;
+    const damageBonus = damageBonusFor(weaponId) * level;
     const countBonus = countLevel;
 
     return {
@@ -68,15 +68,25 @@ export class WeaponSystem {
       return;
     }
 
-    if (nowMs - state.lastFireMs < stats.cooldownMs) {
-      return;
-    }
+    if (nowMs - state.lastFireMs < stats.cooldownMs) return;
     state.lastFireMs = nowMs;
 
-    if (weaponId === "shuriken") {
-      this.fireShuriken(stats);
-    } else if (weaponId === "boomerang") {
-      this.fireBoomerang(stats);
+    switch (weaponId) {
+      case "shuriken":
+        this.fireShuriken(stats);
+        break;
+      case "boomerang":
+        this.fireBoomerang(stats);
+        break;
+      case "arrow":
+        this.fireArrow(stats);
+        break;
+      case "bomb":
+        this.fireBomb(stats);
+        break;
+      case "caltrop":
+        this.dropCaltrops(stats, nowMs);
+        break;
     }
   }
 
@@ -86,11 +96,10 @@ export class WeaponSystem {
     const baseDir = this.k
       .vec2(target.obj.pos.x - this.player.obj.pos.x, target.obj.pos.y - this.player.obj.pos.y)
       .unit();
-
     const baseAngle = Math.atan2(baseDir.y, baseDir.x);
-    const spread = 0.25;
+
     for (let i = 0; i < stats.count; i += 1) {
-      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * spread;
+      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.25;
       const angle = baseAngle + offset;
       const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
       this.projectiles.push(
@@ -142,9 +151,101 @@ export class WeaponSystem {
     }
   }
 
+  private fireArrow(stats: WeaponStats): void {
+    const target = this.spawner.nearest(this.player.obj.pos.x, this.player.obj.pos.y);
+    const baseDir = target
+      ? this.k
+          .vec2(
+            target.obj.pos.x - this.player.obj.pos.x,
+            target.obj.pos.y - this.player.obj.pos.y,
+          )
+          .unit()
+      : this.k.vec2(1, 0);
+    const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    const pierceLevel = this.player.stats.upgrades["arrow-pierce"] ?? 0;
+
+    for (let i = 0; i < stats.count; i += 1) {
+      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.12;
+      const angle = baseAngle + offset;
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "pierce",
+          weapon: "arrow",
+          sprite: WEAPON_DEFS.arrow.spriteKey,
+          x: this.player.obj.pos.x,
+          y: this.player.obj.pos.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+          piercesLeft: 2 + pierceLevel,
+        }),
+      );
+    }
+  }
+
+  private fireBomb(stats: WeaponStats): void {
+    const target = this.spawner.nearest(this.player.obj.pos.x, this.player.obj.pos.y);
+    const baseDir = target
+      ? this.k
+          .vec2(
+            target.obj.pos.x - this.player.obj.pos.x,
+            target.obj.pos.y - this.player.obj.pos.y,
+          )
+          .unit()
+      : this.k.vec2(1, 0);
+
+    const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    for (let i = 0; i < stats.count; i += 1) {
+      const angle = baseAngle + (i - (stats.count - 1) / 2) * 0.3;
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "bomb",
+          weapon: "bomb",
+          sprite: WEAPON_DEFS.bomb.spriteKey,
+          x: this.player.obj.pos.x,
+          y: this.player.obj.pos.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+          scale: 2.5,
+        }),
+      );
+    }
+  }
+
+  private dropCaltrops(stats: WeaponStats, nowMs: number): void {
+    for (let i = 0; i < stats.count; i += 1) {
+      const angle = (Math.PI * 2 * i) / stats.count + this.k.rand(-0.3, 0.3);
+      const distance = this.k.rand(stats.range * 0.4, stats.range);
+      const x = this.player.obj.pos.x + Math.cos(angle) * distance;
+      const y = this.player.obj.pos.y + Math.sin(angle) * distance;
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "ground",
+          weapon: "caltrop",
+          sprite: WEAPON_DEFS.caltrop.spriteKey,
+          x,
+          y,
+          dir: this.k.vec2(1, 0),
+          speed: 0,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: 0,
+          lifetimeMs: CALTROP_LIFETIME_MS,
+        }),
+      );
+    }
+    void nowMs;
+  }
+
   private ensureOrbs(stats: WeaponStats): void {
     const existing = this.projectiles.filter((p) => p.kind === "orbit" && p.weapon === "magicOrb");
-
     for (let i = existing.length; i < stats.count; i += 1) {
       const angle = (Math.PI * 2 * i) / Math.max(1, stats.count);
       this.projectiles.push(
@@ -165,7 +266,6 @@ export class WeaponSystem {
         }),
       );
     }
-
     for (const orb of this.projectiles) {
       if (orb.kind === "orbit" && orb.weapon === "magicOrb") {
         orb.damage = stats.damage;
@@ -179,12 +279,38 @@ export class WeaponSystem {
 
       if (p.kind === "orbit") {
         this.updateOrbit(p, dt);
-        this.checkOrbitHits(p, nowMs);
+        this.checkPersistentHits(p, nowMs, MAGIC_ORB_HIT_COOLDOWN_MS);
+        continue;
+      }
+
+      if (p.kind === "ground") {
+        p.elapsedMs += dt * 1000;
+        this.checkPersistentHits(p, nowMs, CALTROP_HIT_COOLDOWN_MS);
+        if (p.lifetimeMs > 0 && p.elapsedMs >= p.lifetimeMs) {
+          p.obj.destroy();
+          this.projectiles.splice(i, 1);
+        }
+        continue;
+      }
+
+      if (p.kind === "bomb") {
+        this.updateBomb(p, dt);
+        if (p.distance >= p.maxRange) {
+          this.explodeBomb(p);
+          p.obj.destroy();
+          this.projectiles.splice(i, 1);
+        }
         continue;
       }
 
       if (p.kind === "boomerang") {
         this.updateBoomerang(p, dt);
+      } else if (p.kind === "pierce") {
+        const step = p.dir.scale(p.speed * dt);
+        p.obj.pos = p.obj.pos.add(step);
+        p.distance += step.len();
+        (p.obj as { angle?: number }).angle =
+          Math.atan2(p.dir.y, p.dir.x) * (180 / Math.PI);
       } else {
         const step = p.dir.scale(p.speed * dt);
         p.obj.pos = p.obj.pos.add(step);
@@ -192,15 +318,18 @@ export class WeaponSystem {
         (p.obj as { angle?: number }).angle = ((p.obj as { angle?: number }).angle ?? 0) + dt * 720;
       }
 
+      if (p.kind === "pierce") {
+        this.handlePierceHits(p, nowMs);
+        if (p.piercesLeft <= 0 || p.distance >= p.maxRange) {
+          p.obj.destroy();
+          this.projectiles.splice(i, 1);
+        }
+        continue;
+      }
+
       const hitIndex = this.findEnemyHit(p);
       if (hitIndex >= 0) {
-        const enemy = this.spawner.enemies[hitIndex];
-        enemy.hp -= p.damage;
-        if (enemy.hp <= 0) {
-          this.onEnemyDeath(enemy, hitIndex);
-        } else {
-          this.onEnemyHit();
-        }
+        this.applyHit(p, hitIndex);
         if (p.kind === "linear") {
           p.obj.destroy();
           this.projectiles.splice(i, 1);
@@ -228,14 +357,91 @@ export class WeaponSystem {
     }
   }
 
+  private applyHit(p: Projectile, enemyIndex: number): void {
+    const enemy = this.spawner.enemies[enemyIndex];
+    const damage = Math.min(enemy.hp, p.damage);
+    enemy.hp -= p.damage;
+    this.stats.record(p.weapon, damage);
+    if (enemy.hp <= 0) {
+      this.onEnemyDeath(enemy, enemyIndex);
+    } else {
+      this.onEnemyHit();
+    }
+  }
+
+  private handlePierceHits(p: Projectile, nowMs: number): void {
+    for (let j = this.spawner.enemies.length - 1; j >= 0; j -= 1) {
+      const enemy = this.spawner.enemies[j];
+      const range = p.area + enemy.area * 0.5;
+      const dx = enemy.obj.pos.x - p.obj.pos.x;
+      const dy = enemy.obj.pos.y - p.obj.pos.y;
+      if (dx * dx + dy * dy > range * range) continue;
+
+      const last = p.hitCooldownsMs.get(enemyId(enemy)) ?? -Number.MAX_SAFE_INTEGER;
+      if (nowMs - last < 150) continue;
+      p.hitCooldownsMs.set(enemyId(enemy), nowMs);
+
+      this.applyHit(p, j);
+      p.piercesLeft -= 1;
+      if (p.piercesLeft <= 0) break;
+    }
+  }
+
+  private checkPersistentHits(p: Projectile, nowMs: number, cooldownMs: number): void {
+    for (let i = this.spawner.enemies.length - 1; i >= 0; i -= 1) {
+      const enemy = this.spawner.enemies[i];
+      const range = p.area + enemy.area * 0.5;
+      const dx = enemy.obj.pos.x - p.obj.pos.x;
+      const dy = enemy.obj.pos.y - p.obj.pos.y;
+      if (dx * dx + dy * dy > range * range) continue;
+
+      const last = p.hitCooldownsMs.get(enemyId(enemy)) ?? -Number.MAX_SAFE_INTEGER;
+      if (nowMs - last < cooldownMs) continue;
+      p.hitCooldownsMs.set(enemyId(enemy), nowMs);
+
+      this.applyHit(p, i);
+    }
+  }
+
+  private explodeBomb(p: Projectile): void {
+    this.k.shake(6);
+    const flash = this.k.add([
+      this.k.circle(p.area),
+      this.k.pos(p.obj.pos.x, p.obj.pos.y),
+      this.k.anchor("center"),
+      this.k.color(255, 180, 80),
+      this.k.opacity(0.7),
+      this.k.z(6),
+    ]);
+    let t = 0;
+    flash.onUpdate(() => {
+      t += this.k.dt();
+      (flash as unknown as { opacity: number }).opacity = Math.max(0, 0.7 - t * 2);
+      if (t > 0.35) flash.destroy();
+    });
+
+    for (let i = this.spawner.enemies.length - 1; i >= 0; i -= 1) {
+      const enemy = this.spawner.enemies[i];
+      const dx = enemy.obj.pos.x - p.obj.pos.x;
+      const dy = enemy.obj.pos.y - p.obj.pos.y;
+      if (dx * dx + dy * dy > p.area * p.area) continue;
+      this.applyHit(p, i);
+    }
+  }
+
+  private updateBomb(p: Projectile, dt: number): void {
+    const step = p.dir.scale(p.speed * dt);
+    p.obj.pos = p.obj.pos.add(step);
+    p.distance += step.len();
+    (p.obj as { angle?: number }).angle = ((p.obj as { angle?: number }).angle ?? 0) + dt * 360;
+  }
+
   private updateBoomerang(p: Projectile, dt: number): void {
     if (!p.returning) {
       const step = p.dir.scale(p.speed * dt);
       p.obj.pos = p.obj.pos.add(step);
       p.distance += step.len();
-      if (p.distance >= p.maxRange) {
-        p.returning = true;
-      }
+      if (p.distance >= p.maxRange) p.returning = true;
     } else {
       const dx = this.player.obj.pos.x - p.obj.pos.x;
       const dy = this.player.obj.pos.y - p.obj.pos.y;
@@ -243,8 +449,7 @@ export class WeaponSystem {
       p.obj.pos.x += (dx / len) * p.speed * dt;
       p.obj.pos.y += (dy / len) * p.speed * dt;
     }
-    const angleDeg = Math.atan2(p.dir.y, p.dir.x) * (180 / Math.PI);
-    (p.obj as { angle?: number }).angle = (angleDeg + p.distance) % 360;
+    (p.obj as { angle?: number }).angle = ((p.obj as { angle?: number }).angle ?? 0) + dt * 540;
   }
 
   private updateOrbit(p: Projectile, dt: number): void {
@@ -253,36 +458,13 @@ export class WeaponSystem {
     p.obj.pos.y = this.player.obj.pos.y + Math.sin(p.orbitAngle) * p.orbitRadius;
   }
 
-  private checkOrbitHits(p: Projectile, nowMs: number): void {
-    for (let i = this.spawner.enemies.length - 1; i >= 0; i -= 1) {
-      const enemy = this.spawner.enemies[i];
-      const dx = enemy.obj.pos.x - p.obj.pos.x;
-      const dy = enemy.obj.pos.y - p.obj.pos.y;
-      const range = p.area + enemy.area * 0.5;
-      if (dx * dx + dy * dy > range * range) continue;
-
-      const last = p.hitCooldownsMs.get(enemyId(enemy)) ?? -Number.MAX_SAFE_INTEGER;
-      if (nowMs - last < MAGIC_ORB_HIT_COOLDOWN_MS) continue;
-      p.hitCooldownsMs.set(enemyId(enemy), nowMs);
-
-      enemy.hp -= p.damage;
-      if (enemy.hp <= 0) {
-        this.onEnemyDeath(enemy, i);
-      } else {
-        this.onEnemyHit();
-      }
-    }
-  }
-
   private findEnemyHit(p: Projectile): number {
     for (let j = 0; j < this.spawner.enemies.length; j += 1) {
       const enemy = this.spawner.enemies[j];
+      const range = p.area + enemy.area * 0.5;
       const dx = enemy.obj.pos.x - p.obj.pos.x;
       const dy = enemy.obj.pos.y - p.obj.pos.y;
-      const range = p.area + enemy.area * 0.5;
-      if (dx * dx + dy * dy <= range * range) {
-        return j;
-      }
+      if (dx * dx + dy * dy <= range * range) return j;
     }
     return -1;
   }
@@ -291,4 +473,15 @@ export class WeaponSystem {
 function enemyId(enemy: Enemy): number {
   const obj = enemy.obj as unknown as { id?: number };
   return obj.id ?? 0;
+}
+
+function damageBonusFor(weaponId: WeaponId): number {
+  switch (weaponId) {
+    case "shuriken": return 6;
+    case "magicOrb": return 4;
+    case "boomerang": return 8;
+    case "arrow": return 6;
+    case "bomb": return 20;
+    case "caltrop": return 4;
+  }
 }

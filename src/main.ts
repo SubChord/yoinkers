@@ -4,7 +4,9 @@ import { ITEM_DEFS } from "./config/ItemDefs";
 import { MUSIC_TRACKS } from "./config/MusicDefs";
 import { registerEndScene } from "./scenes/EndScene";
 import { registerGameScene } from "./scenes/GameScene";
+import { registerGuideScene } from "./scenes/GuideScene";
 import { registerMenuScene } from "./scenes/MenuScene";
+import { registerStatsScene } from "./scenes/StatsScene";
 
 const k = kaplay({
   width: GAME_WIDTH,
@@ -78,6 +80,9 @@ k.loadSprite("magic-orb", "assets/Items/Weapon/magic-orb-blue.png", {
   },
 });
 k.loadSprite("boomerang", "assets/Items/Weapon/kunai.png");
+k.loadSprite("weapon-arrow", "assets/Items/Weapon/arrow.png");
+k.loadSprite("weapon-bomb", "assets/Items/Weapon/bomb.png");
+k.loadSprite("weapon-caltrop", "assets/Items/Weapon/caltrop.png");
 k.loadSprite("chest", "assets/Items/Treasure/chest.png", { sliceX: 2, sliceY: 1 });
 k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
 
@@ -96,5 +101,7 @@ k.loadSound("sfx-gem", "assets/Sounds/gem.wav");
 registerMenuScene(k);
 registerGameScene(k);
 registerEndScene(k);
+registerStatsScene(k);
+registerGuideScene(k);
 
 k.go("menu");

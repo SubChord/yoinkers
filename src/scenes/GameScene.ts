@@ -13,6 +13,8 @@ import { ChestSystem } from "../systems/ChestSystem";
 import { EnemySpawner } from "../systems/EnemySpawner";
 import { ItemSystem } from "../systems/ItemSystem";
 import { MusicSystem } from "../systems/MusicSystem";
+import { persistRun } from "../systems/SaveStore";
+import { StatsTracker } from "../systems/StatsTracker";
 import { WeaponSystem } from "../systems/WeaponSystem";
 import { applyUpgrade, pickUpgradeChoices } from "../systems/UpgradeSystem";
 import { createHud, updateHud } from "../ui/HUD";
@@ -27,6 +29,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     const spawner = new EnemySpawner(k, player);
     const gems: XpGem[] = [];
     const items = new ItemSystem(k, player, spawner, (key) => playSfx(k, key));
+    const tracker = new StatsTracker();
 
     const weapons = new WeaponSystem(
       k,
@@ -41,6 +44,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
         playSfx(k, "sfx-death");
       },
       () => playSfx(k, "sfx-hit"),
+      tracker,
     );
 
     const chests = new ChestSystem(k, player, (key) => playSfx(k, key));
@@ -105,7 +109,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       const dt = k.dt();
 
       if (nowMs - state.startMs >= GAME_DURATION_MS) {
-        endGame(k, state, player, music, true);
+        endGame(k, state, player, music, tracker, true);
         return;
       }
 
@@ -134,7 +138,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       });
 
       if (player.stats.hp <= 0) {
-        endGame(k, state, player, music, false);
+        endGame(k, state, player, music, tracker, false);
         return;
       }
 
@@ -203,16 +207,23 @@ function endGame(
   state: { startMs: number; wave: number; enemiesKilled: number },
   player: Player,
   music: MusicSystem,
+  tracker: StatsTracker,
   won: boolean,
 ): void {
   music.stop();
-  k.go("end", {
+  const damageByWeapon = tracker.totals();
+  const totalDamage = tracker.totalDamage();
+  const stats = {
     won,
     enemiesKilled: state.enemiesKilled,
     level: player.stats.level + 1,
     wave: state.wave,
     timeSurvivedMs: Date.now() - state.startMs,
-  });
+    damageByWeapon,
+    totalDamage,
+  };
+  persistRun(stats);
+  k.go("end", stats);
 }
 
 function playSfx(k: KAPLAYCtx, key: string): void {
