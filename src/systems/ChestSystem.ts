@@ -10,7 +10,7 @@ const MAX_ACTIVE_CHESTS = 6;
 const LOOT_POPUP_DURATION_MS = 1800;
 
 export class ChestSystem {
-  private chests: Chest[] = [];
+  public chests: Chest[] = [];
   private nextSpawnAt = 0;
 
   constructor(

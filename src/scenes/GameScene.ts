@@ -6,6 +6,7 @@ import {
   WORLD_SIZE,
   XP_PER_LEVEL,
 } from "../config/GameConfig";
+import { MAP_DEFS, type MapId } from "../config/MapDefs";
 import { createPlayer, updatePlayer, type Player } from "../entities/Player";
 import { scatterScenery } from "../entities/Scenery";
 import { updateGem, spawnXpGem, type XpGem } from "../entities/XpGem";
@@ -21,12 +22,20 @@ import { WeaponSystem } from "../systems/WeaponSystem";
 import { applyUpgrade, pickUpgradeChoices } from "../systems/UpgradeSystem";
 import { mountDamageOverlay } from "../ui/DamageOverlay";
 import { createHud, updateHud } from "../ui/HUD";
+import { mountMinimap } from "../ui/Minimap";
 import { mountMusicSelector } from "../ui/MusicSelector";
+import { mountPauseButton } from "../ui/PauseButton";
 import { showUpgradeMenu, type UpgradeMenu } from "../ui/UpgradeMenu";
 
+interface GameSceneArgs {
+  mapId?: MapId;
+}
+
 export function registerGameScene(k: KAPLAYCtx): void {
-  k.scene("game", () => {
-    drawWorld(k);
+  k.scene("game", (args: GameSceneArgs = {}) => {
+    const mapId: MapId = args.mapId ?? "grove";
+    const mapDef = MAP_DEFS[mapId];
+    drawWorld(k, mapDef.palette);
 
     const player = createPlayer(k);
     const spawner = new EnemySpawner(k, player);
@@ -34,7 +43,13 @@ export function registerGameScene(k: KAPLAYCtx): void {
     const tracker = new StatsTracker();
     const quests = new QuestSystem(k, player, (key) => playSfx(k, key));
     const gear = new GearSystem(k, player, (key) => playSfx(k, key));
-    const items = new ItemSystem(k, player, spawner, (key) => playSfx(k, key), () => quests.onItem());
+    const items = new ItemSystem(
+      k,
+      player,
+      spawner,
+      (key) => playSfx(k, key),
+      () => quests.onItem(),
+    );
 
     const weapons = new WeaponSystem(
       k,
@@ -45,6 +60,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
         items.onEnemyKilled(enemy, enemy.isElite);
         gear.onEnemyKilled(enemy);
         quests.onKill(enemy.isElite, enemy.isBoss);
+        if (enemy.isBoss) playSfx(k, "sfx-yoink");
         enemy.obj.destroy();
         spawner.removeAt(index);
         state.enemiesKilled += 1;
@@ -62,8 +78,9 @@ export function registerGameScene(k: KAPLAYCtx): void {
       () => quests.onChest(),
     );
     const hud = createHud(k);
+    const minimap = mountMinimap(k);
     const music = new MusicSystem(k);
-    music.start();
+    music.selectTrack(mapDef.defaultTrackId);
     mountMusicSelector(k, music);
     const damageFlash = mountDamageOverlay(k);
 
@@ -73,6 +90,8 @@ export function registerGameScene(k: KAPLAYCtx): void {
       wave: number;
       enemiesKilled: number;
       paused: boolean;
+      pauseButtonPaused: boolean;
+      pausedAtMs: number | undefined;
       levelQueue: number;
       activeMenu: UpgradeMenu | null;
     }
@@ -83,9 +102,53 @@ export function registerGameScene(k: KAPLAYCtx): void {
       wave: 1,
       enemiesKilled: 0,
       paused: false,
+      pauseButtonPaused: false,
+      pausedAtMs: undefined,
       levelQueue: 0,
       activeMenu: null,
     };
+
+    const pauseButton = mountPauseButton(k, {
+      onToggle: () => togglePause(),
+    });
+
+    const togglePause = () => {
+      if (state.pauseButtonPaused) {
+        resumeGame();
+      } else {
+        pauseGame();
+      }
+    };
+
+    const pauseGame = () => {
+      if (state.paused) return;
+      state.paused = true;
+      state.pauseButtonPaused = true;
+      state.pausedAtMs = Date.now();
+      music.pause();
+      pauseButton.setPaused(true);
+    };
+
+    const resumeGame = () => {
+      if (!state.pauseButtonPaused) return;
+      const pausedAt = state.pausedAtMs;
+      if (pausedAt !== undefined) {
+        const drift = Date.now() - pausedAt;
+        state.startMs += drift;
+        state.waveStartedMs += drift;
+        state.pausedAtMs = undefined;
+      }
+      state.pauseButtonPaused = false;
+      state.paused = false;
+      music.resume();
+      pauseButton.setPaused(false);
+    };
+
+    k.onKeyPress("escape", () => {
+      if (state.pauseButtonPaused) resumeGame();
+      else pauseGame();
+    });
+    k.onKeyPress("p", () => togglePause());
 
     spawner.spawnWave(state.wave);
     quests.onWave(state.wave);
@@ -124,7 +187,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       const dt = k.dt();
 
       if (nowMs - state.startMs >= GAME_DURATION_MS) {
-        endGame(k, state, player, music, tracker, true);
+        endGame(k, state, player, music, tracker, mapId, true);
         return;
       }
 
@@ -154,8 +217,15 @@ export function registerGameScene(k: KAPLAYCtx): void {
         remainingMs: Math.max(0, GAME_DURATION_MS - (nowMs - state.startMs)),
       });
 
+      minimap.update({
+        player,
+        enemies: spawner.enemies,
+        items: items.items,
+        chests: chests.chests,
+      });
+
       if (player.stats.hp <= 0) {
-        endGame(k, state, player, music, tracker, false);
+        endGame(k, state, player, music, tracker, mapId, false);
         return;
       }
 
@@ -164,14 +234,14 @@ export function registerGameScene(k: KAPLAYCtx): void {
   });
 }
 
-function drawWorld(k: KAPLAYCtx): void {
+function drawWorld(k: KAPLAYCtx, palette: typeof MAP_DEFS["grove"]["palette"]): void {
   k.add([
     k.rect(WORLD_SIZE, WORLD_SIZE),
     k.pos(-WORLD_SIZE / 2, -WORLD_SIZE / 2),
-    k.color(38, 72, 44),
+    k.color(palette.ground[0], palette.ground[1], palette.ground[2]),
     k.z(0),
   ]);
-  scatterScenery(k);
+  scatterScenery(k, palette);
 }
 
 function handleEnemyTouchPlayer(
@@ -235,6 +305,7 @@ function endGame(
   player: Player,
   music: MusicSystem,
   tracker: StatsTracker,
+  mapId: MapId,
   won: boolean,
 ): void {
   music.stop();
@@ -249,7 +320,7 @@ function endGame(
     damageByWeapon,
     totalDamage,
   };
-  persistRun(stats);
+  persistRun(stats, mapId);
   k.go("end", stats);
 }
 

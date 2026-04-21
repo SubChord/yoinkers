@@ -1,6 +1,7 @@
+import { MAP_DEFS, MAP_ORDER, type MapId } from "../config/MapDefs";
 import type { EndStats } from "../types/GameTypes";
 
-const STORAGE_KEY = "yoinkers.save.v1";
+const STORAGE_KEY = "yoinkers.save.v2";
 
 export interface SaveData {
   runsPlayed: number;
@@ -14,6 +15,9 @@ export interface SaveData {
   bestEnemies: number;
   allTimeDamage: Record<string, number>;
   lastRun: EndStats | null;
+  unlockedMaps: MapId[];
+  clearedMaps: MapId[];
+  lastMapId: MapId;
 }
 
 const EMPTY_SAVE: SaveData = {
@@ -28,26 +32,38 @@ const EMPTY_SAVE: SaveData = {
   bestEnemies: 0,
   allTimeDamage: {},
   lastRun: null,
+  unlockedMaps: ["grove"],
+  clearedMaps: [],
+  lastMapId: "grove",
 };
 
 export function loadSave(): SaveData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...EMPTY_SAVE, allTimeDamage: {} };
+    if (!raw) return cloneEmpty();
     const parsed = JSON.parse(raw) as Partial<SaveData>;
     return {
-      ...EMPTY_SAVE,
+      ...cloneEmpty(),
       ...parsed,
       allTimeDamage: { ...(parsed.allTimeDamage ?? {}) },
+      unlockedMaps: sanitizeMaps(parsed.unlockedMaps, ["grove"]),
+      clearedMaps: sanitizeMaps(parsed.clearedMaps, []),
+      lastMapId: sanitizeMapId(parsed.lastMapId, "grove"),
     };
   } catch {
-    return { ...EMPTY_SAVE, allTimeDamage: {} };
+    return cloneEmpty();
   }
 }
 
-export function persistRun(stats: EndStats): SaveData {
+export function persistRun(stats: EndStats, mapId: MapId): SaveData {
   const current = loadSave();
+  const clearedMaps = stats.won
+    ? addUnique(current.clearedMaps, mapId)
+    : current.clearedMaps;
+  const unlockedMaps = stats.won ? unlockNextMaps(current.unlockedMaps, mapId) : current.unlockedMaps;
+
   const next: SaveData = {
+    ...current,
     runsPlayed: current.runsPlayed + 1,
     winCount: current.winCount + (stats.won ? 1 : 0),
     totalEnemiesKilled: current.totalEnemiesKilled + stats.enemiesKilled,
@@ -59,6 +75,9 @@ export function persistRun(stats: EndStats): SaveData {
     bestEnemies: Math.max(current.bestEnemies, stats.enemiesKilled),
     allTimeDamage: mergeDamage(current.allTimeDamage, stats.damageByWeapon),
     lastRun: stats,
+    unlockedMaps,
+    clearedMaps,
+    lastMapId: mapId,
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -68,13 +87,46 @@ export function persistRun(stats: EndStats): SaveData {
   return next;
 }
 
+export function setLastMap(mapId: MapId): void {
+  const current = loadSave();
+  current.lastMapId = mapId;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+  } catch {
+    // ignore
+  }
+}
+
 export function resetSave(): SaveData {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
     // ignore
   }
-  return { ...EMPTY_SAVE, allTimeDamage: {} };
+  return cloneEmpty();
+}
+
+function cloneEmpty(): SaveData {
+  return {
+    ...EMPTY_SAVE,
+    allTimeDamage: {},
+    unlockedMaps: [...EMPTY_SAVE.unlockedMaps],
+    clearedMaps: [],
+  };
+}
+
+function unlockNextMaps(currentUnlocked: MapId[], justClearedMapId: MapId): MapId[] {
+  const result = [...currentUnlocked];
+  for (const id of MAP_ORDER) {
+    if (MAP_DEFS[id].prerequisite === justClearedMapId && !result.includes(id)) {
+      result.push(id);
+    }
+  }
+  return result;
+}
+
+function addUnique(list: MapId[], id: MapId): MapId[] {
+  return list.includes(id) ? list : [...list, id];
 }
 
 function mergeDamage(a: Record<string, number>, b: Record<string, number>): Record<string, number> {
@@ -83,4 +135,13 @@ function mergeDamage(a: Record<string, number>, b: Record<string, number>): Reco
     merged[weapon] = (merged[weapon] ?? 0) + amount;
   }
   return merged;
+}
+
+function sanitizeMaps(value: MapId[] | undefined, fallback: MapId[]): MapId[] {
+  if (!Array.isArray(value)) return [...fallback];
+  return value.filter((id): id is MapId => MAP_ORDER.includes(id as MapId));
+}
+
+function sanitizeMapId(value: MapId | undefined, fallback: MapId): MapId {
+  return value && MAP_ORDER.includes(value) ? value : fallback;
 }

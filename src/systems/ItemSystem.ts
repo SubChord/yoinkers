@@ -13,7 +13,7 @@ const ELITE_DROP_CHANCE = 0.18;
 const POPUP_MS = 1500;
 
 export class ItemSystem {
-  private items: Item[] = [];
+  public items: Item[] = [];
   private nextWorldSpawnAt = 0;
 
   constructor(

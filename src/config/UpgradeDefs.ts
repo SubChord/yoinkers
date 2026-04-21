@@ -197,6 +197,7 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     label: "Swift Feet",
     description: "+12% movement speed.",
     maxLevel: 5,
+    icon: "gear-feather",
   },
   {
     id: "boost-maxHp",
@@ -204,6 +205,7 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     label: "Iron Body",
     description: "+25 max HP and heal to full.",
     maxLevel: 5,
+    icon: "gear-amulet",
   },
   {
     id: "boost-regen",
@@ -211,6 +213,7 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     label: "Regeneration",
     description: "+0.6 HP / second.",
     maxLevel: 3,
+    icon: "item-medipack",
   },
   {
     id: "boost-magnet",
@@ -218,6 +221,7 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     label: "Gem Magnet",
     description: "+50% gem pickup radius.",
     maxLevel: 3,
+    icon: "gear-bag",
   },
   {
     id: "boost-damage",
@@ -225,6 +229,7 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     label: "Battle Rage",
     description: "+10% damage to all weapons.",
     maxLevel: 5,
+    icon: "gear-hammer",
   },
   {
     id: "boost-cooldown",
@@ -232,6 +237,7 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     label: "Focused Mind",
     description: "-8% cooldown on all weapons.",
     maxLevel: 4,
+    icon: "gear-hourglass",
   },
 ];
 

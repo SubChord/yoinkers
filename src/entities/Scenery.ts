@@ -1,5 +1,6 @@
 import type { KAPLAYCtx } from "kaplay";
 import { WORLD_SIZE } from "../config/GameConfig";
+import type { MapPalette } from "../config/MapDefs";
 
 const GRASS_COUNT = 1400;
 const FLOWER_COUNT = 220;
@@ -9,14 +10,7 @@ const TREE_COUNT = 120;
 const ROCK_COUNT = 110;
 const LOG_COUNT = 40;
 
-const FLOWER_COLORS: Array<[number, number, number]> = [
-  [246, 202, 78],
-  [238, 106, 144],
-  [200, 180, 242],
-  [244, 242, 218],
-];
-
-export function scatterScenery(k: KAPLAYCtx): void {
+export function scatterScenery(k: KAPLAYCtx, palette: MapPalette): void {
   const half = WORLD_SIZE / 2;
   const rand = (min: number, max: number) => k.rand(min, max);
 
@@ -24,17 +18,17 @@ export function scatterScenery(k: KAPLAYCtx): void {
     k.add([
       k.rect(10, 10),
       k.pos(rand(-half, half), rand(-half, half)),
-      k.color(54, 96, 58),
+      k.color(palette.grass[0], palette.grass[1], palette.grass[2]),
       k.z(1),
     ]);
   }
 
   for (let i = 0; i < FLOWER_COUNT; i += 1) {
-    const [r, g, b] = FLOWER_COLORS[Math.floor(rand(0, FLOWER_COLORS.length))];
+    const color = palette.flowers[Math.floor(rand(0, palette.flowers.length))];
     k.add([
       k.circle(3),
       k.pos(rand(-half, half), rand(-half, half)),
-      k.color(r, g, b),
+      k.color(color[0], color[1], color[2]),
       k.z(1),
     ]);
   }
@@ -65,14 +59,14 @@ export function scatterScenery(k: KAPLAYCtx): void {
       k.circle(size),
       k.pos(cx, cy),
       k.anchor("center"),
-      k.color(34, 80, 44),
+      k.color(palette.bushDark[0], palette.bushDark[1], palette.bushDark[2]),
       k.z(2),
     ]);
     k.add([
       k.circle(size * 0.7),
       k.pos(cx - size * 0.3, cy - size * 0.3),
       k.anchor("center"),
-      k.color(60, 116, 70),
+      k.color(palette.bushLight[0], palette.bushLight[1], palette.bushLight[2]),
       k.z(3),
     ]);
   }
@@ -84,21 +78,25 @@ export function scatterScenery(k: KAPLAYCtx): void {
     k.add([
       k.rect(8, 14),
       k.pos(cx - 4, cy),
-      k.color(70, 48, 28),
+      k.color(palette.treeTrunk[0], palette.treeTrunk[1], palette.treeTrunk[2]),
       k.z(3),
     ]);
     k.add([
       k.circle(canopy),
       k.pos(cx, cy - 4),
       k.anchor("center"),
-      k.color(24, 62, 34),
+      k.color(palette.treeCanopy[0], palette.treeCanopy[1], palette.treeCanopy[2]),
       k.z(4),
     ]);
     k.add([
       k.circle(canopy * 0.8),
       k.pos(cx - canopy * 0.3, cy - 10),
       k.anchor("center"),
-      k.color(46, 90, 54),
+      k.color(
+        palette.treeCanopyHighlight[0],
+        palette.treeCanopyHighlight[1],
+        palette.treeCanopyHighlight[2],
+      ),
       k.z(5),
     ]);
   }
@@ -111,14 +109,14 @@ export function scatterScenery(k: KAPLAYCtx): void {
       k.circle(size),
       k.pos(cx, cy),
       k.anchor("center"),
-      k.color(126, 126, 132),
+      k.color(palette.rockDark[0], palette.rockDark[1], palette.rockDark[2]),
       k.z(2),
     ]);
     k.add([
       k.circle(size * 0.55),
       k.pos(cx - size * 0.3, cy - size * 0.3),
       k.anchor("center"),
-      k.color(170, 170, 178),
+      k.color(palette.rockLight[0], palette.rockLight[1], palette.rockLight[2]),
       k.z(3),
     ]);
   }
@@ -129,13 +127,13 @@ export function scatterScenery(k: KAPLAYCtx): void {
     k.add([
       k.rect(26, 10, { radius: 4 }),
       k.pos(cx - 13, cy - 5),
-      k.color(92, 62, 38),
+      k.color(palette.logLight[0], palette.logLight[1], palette.logLight[2]),
       k.z(2),
     ]);
     k.add([
       k.rect(22, 2),
       k.pos(cx - 11, cy - 1),
-      k.color(58, 38, 22),
+      k.color(palette.logDark[0], palette.logDark[1], palette.logDark[2]),
       k.z(3),
     ]);
   }

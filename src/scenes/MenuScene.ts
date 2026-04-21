@@ -1,5 +1,6 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/GameConfig";
+import { loadSave } from "../systems/SaveStore";
 
 export function registerMenuScene(k: KAPLAYCtx): void {
   k.scene("menu", () => {
@@ -44,27 +45,34 @@ export function registerMenuScene(k: KAPLAYCtx): void {
       ]);
     });
 
+    const save = loadSave();
     let didStart = false;
     const start = () => {
       if (didStart) return;
       didStart = true;
-      k.go("game");
+      k.go("game", { mapId: save.lastMapId });
     };
 
-    const startBtn = makeMenuButton(k, "START", 260, 64, GAME_WIDTH / 2, 440, {
+    const startBtn = makeMenuButton(k, `START — ${prettyMap(save.lastMapId)}`, 360, 64, GAME_WIDTH / 2, 430, {
       bg: [60, 120, 86],
       outline: [210, 238, 196],
-      size: 30,
+      size: 24,
     });
     startBtn.onClick(start);
 
-    const statsBtn = makeMenuButton(k, "STATS", 220, 52, GAME_WIDTH / 2 - 140, 530, {
+    const mapsBtn = makeMenuButton(k, "MAPS", 180, 46, GAME_WIDTH / 2 - 285, 510, {
+      bg: [64, 96, 130],
+      outline: [180, 210, 244],
+    });
+    mapsBtn.onClick(() => k.go("maps"));
+
+    const statsBtn = makeMenuButton(k, "STATS", 180, 46, GAME_WIDTH / 2 - 95, 510, {
       bg: [44, 80, 100],
       outline: [180, 210, 230],
     });
     statsBtn.onClick(() => k.go("stats"));
 
-    const guideBtn = makeMenuButton(k, "GUIDE", 220, 52, GAME_WIDTH / 2 + 140, 530, {
+    const guideBtn = makeMenuButton(k, "GUIDE", 180, 46, GAME_WIDTH / 2 + 95, 510, {
       bg: [90, 62, 118],
       outline: [210, 180, 230],
     });
@@ -72,6 +80,7 @@ export function registerMenuScene(k: KAPLAYCtx): void {
 
     k.onKeyPress("space", start);
     k.onKeyPress("enter", start);
+    k.onKeyPress("m", () => k.go("maps"));
     k.onKeyPress("s", () => k.go("stats"));
     k.onKeyPress("g", () => k.go("guide"));
 
@@ -84,6 +93,16 @@ export function registerMenuScene(k: KAPLAYCtx): void {
       );
     });
   });
+}
+
+function prettyMap(id: string): string {
+  switch (id) {
+    case "grove": return "Bamboo Grove";
+    case "desert": return "Sunken Desert";
+    case "darkforest": return "Cursed Forest";
+    case "tundra": return "Frozen Tundra";
+    default: return id;
+  }
 }
 
 interface ButtonStyle {

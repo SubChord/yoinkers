@@ -6,6 +6,7 @@ import { MUSIC_TRACKS } from "./config/MusicDefs";
 import { registerEndScene } from "./scenes/EndScene";
 import { registerGameScene } from "./scenes/GameScene";
 import { registerGuideScene } from "./scenes/GuideScene";
+import { registerMapSelectScene } from "./scenes/MapSelectScene";
 import { registerMenuScene } from "./scenes/MenuScene";
 import { registerStatsScene } from "./scenes/StatsScene";
 
@@ -107,11 +108,13 @@ k.loadSound("sfx-hit", "assets/Sounds/hit.wav");
 k.loadSound("sfx-death", "assets/Sounds/death.wav");
 k.loadSound("sfx-levelup", "assets/Sounds/levelup.wav");
 k.loadSound("sfx-gem", "assets/Sounds/gem.wav");
+k.loadSound("sfx-yoink", "assets/Sounds/yoink.wav");
 
 registerMenuScene(k);
 registerGameScene(k);
 registerEndScene(k);
 registerStatsScene(k);
 registerGuideScene(k);
+registerMapSelectScene(k);
 
 k.go("menu");

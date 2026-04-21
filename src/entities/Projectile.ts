@@ -28,6 +28,7 @@ export interface Projectile {
   piercesLeft: number;
   lifetimeMs: number;
   elapsedMs: number;
+  rotationOffset: number;
   hitCooldownsMs: Map<number, number>;
 }
 
@@ -48,10 +49,12 @@ export interface ProjectileSpawnOpts {
   piercesLeft?: number;
   lifetimeMs?: number;
   scale?: number;
+  rotationOffset?: number;
 }
 
 export function spawnProjectile(k: KAPLAYCtx, opts: ProjectileSpawnOpts): Projectile {
-  const rotation = Math.atan2(opts.dir.y, opts.dir.x) * (180 / Math.PI);
+  const rotationOffset = opts.rotationOffset ?? 0;
+  const rotation = Math.atan2(opts.dir.y, opts.dir.x) * (180 / Math.PI) + rotationOffset;
   const rotatable =
     opts.kind === "linear" || opts.kind === "pierce" || opts.kind === "boomerang";
 
@@ -83,6 +86,7 @@ export function spawnProjectile(k: KAPLAYCtx, opts: ProjectileSpawnOpts): Projec
     piercesLeft: opts.piercesLeft ?? 0,
     lifetimeMs: opts.lifetimeMs ?? 0,
     elapsedMs: 0,
+    rotationOffset,
     hitCooldownsMs: new Map(),
   };
 }

@@ -182,6 +182,7 @@ export class WeaponSystem {
           area: stats.area,
           maxRange: stats.range,
           piercesLeft: 2 + pierceLevel,
+          rotationOffset: 45,
         }),
       );
     }
@@ -311,7 +312,7 @@ export class WeaponSystem {
         p.obj.pos = p.obj.pos.add(step);
         p.distance += step.len();
         (p.obj as { angle?: number }).angle =
-          Math.atan2(p.dir.y, p.dir.x) * (180 / Math.PI);
+          Math.atan2(p.dir.y, p.dir.x) * (180 / Math.PI) + p.rotationOffset;
       } else {
         const step = p.dir.scale(p.speed * dt);
         p.obj.pos = p.obj.pos.add(step);
