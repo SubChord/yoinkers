@@ -222,9 +222,14 @@ export function registerGameScene(k: KAPLAYCtx): void {
       warp(wave = 10) {
         state.wave = wave;
         player.stats.level = wave * 3;
-        player.stats.maxHp = 100 + wave * 10;
+        player.stats.maxHp = 100 + wave * 15;
         player.stats.hp = player.stats.maxHp;
-        player.stats.damageMult = 1 + wave * 0.2;
+        player.stats.damageMult = 1 + wave * 0.3;
+        player.stats.speed = Math.round(200 * (1 + wave * 0.08));
+        player.stats.cooldownMult = Math.max(0.3, 1 - wave * 0.04);
+        player.stats.magnetMult = 1 + wave * 0.2;
+        player.stats.xpMult = 1 + wave * 0.15;
+        // Give all base weapons with upgrades
         const baseWeapons: WeaponId[] = [
           "shuriken", "magicOrb", "boomerang", "arrow",
           "bomb", "caltrop", "fireTrail", "holyBeam", "holyWater",
@@ -235,7 +240,12 @@ export function registerGameScene(k: KAPLAYCtx): void {
         for (const w of player.stats.weapons) {
           player.stats.upgrades[w] = Math.min((player.stats.upgrades[w] ?? 0) + 3, 5);
         }
-        console.log(`[yoink] warped to wave ${wave}, ${player.stats.weapons.length} weapons`);
+        // Give gear stacks
+        const gearIds: GearId[] = ["feather", "hammer", "bag", "hourglass", "book", "amulet"];
+        for (const g of gearIds) {
+          player.stats.gear[g] = (player.stats.gear[g] ?? 0) + 2;
+        }
+        console.log(`[yoink] warped → wave ${wave} | spd ${player.stats.speed} | dmg ×${player.stats.damageMult.toFixed(1)} | cd ×${player.stats.cooldownMult.toFixed(2)} | ${player.stats.weapons.length} weapons`);
       },
     };
 
