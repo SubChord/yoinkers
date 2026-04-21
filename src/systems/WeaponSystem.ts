@@ -29,6 +29,8 @@ interface WeaponState {
 
 import type { SuperBoss } from "../entities/SuperBoss";
 
+const BOSS_AREA = 56;
+
 export class WeaponSystem {
   public projectiles: Projectile[] = [];
   public superBoss: SuperBoss | null = null;
@@ -840,21 +842,28 @@ export class WeaponSystem {
   private checkBossHit(p: Projectile): void {
     const boss = this.superBoss;
     if (!boss || boss.phase === "dead" || boss.phase === "airborne") return;
-    const range = p.area + 56;
+    const range = p.area + BOSS_AREA;
     const dx = boss.obj.pos.x - p.obj.pos.x;
     const dy = boss.obj.pos.y - p.obj.pos.y;
-    if (dx * dx + dy * dy <= range * range) {
-      const bonus = this.player.stats.damageMult * this.player.stats.damageBuffMult;
-      const dmg = Math.floor(p.damage * bonus);
-      boss.hp -= dmg;
-      this.stats.record(p.weapon, dmg);
-      this.onDamageDealt(dmg);
-      impactVfx(this.k, {
-        x: boss.obj.pos.x, y: boss.obj.pos.y,
-        color: WEAPON_HIT_COLORS[p.weapon] ?? [255, 255, 255],
-      });
-      this.onEnemyHit();
-    }
+    if (dx * dx + dy * dy > range * range) return;
+
+    // Cooldown for persistent projectiles (orbit, ground, etc.)
+    const BOSS_HIT_ID = -999;
+    const lastHit = p.hitCooldownsMs.get(BOSS_HIT_ID) ?? -Infinity;
+    const now = performance.now();
+    if (now - lastHit < 150) return;
+    p.hitCooldownsMs.set(BOSS_HIT_ID, now);
+
+    const bonus = this.player.stats.damageMult * this.player.stats.damageBuffMult;
+    const dmg = Math.floor(p.damage * bonus);
+    boss.hp -= dmg;
+    this.stats.record(p.weapon, dmg);
+    this.onDamageDealt(dmg);
+    impactVfx(this.k, {
+      x: boss.obj.pos.x, y: boss.obj.pos.y,
+      color: WEAPON_HIT_COLORS[p.weapon] ?? [255, 255, 255],
+    });
+    this.onEnemyHit();
   }
 }
 

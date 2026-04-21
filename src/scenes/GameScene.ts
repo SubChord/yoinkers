@@ -550,6 +550,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
           state.enemiesKilled += 1;
           spawner.spawningDisabled = false;
           weapons.superBoss = null;
+          state.superBoss = null;
         }
       }
       collectGems(k, gems, player, dt, quests);
