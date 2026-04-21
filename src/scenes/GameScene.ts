@@ -213,6 +213,32 @@ export function registerGameScene(k: KAPLAYCtx): void {
     });
     k.onKeyPress("p", () => togglePause());
 
+    // Debug console: window.yoink.warp() to skip to wave 10 with all weapons
+    (window as any).yoink = {
+      state,
+      player,
+      spawner,
+      weapons,
+      warp(wave = 10) {
+        state.wave = wave;
+        player.stats.level = wave * 3;
+        player.stats.maxHp = 100 + wave * 10;
+        player.stats.hp = player.stats.maxHp;
+        player.stats.damageMult = 1 + wave * 0.2;
+        const baseWeapons: WeaponId[] = [
+          "shuriken", "magicOrb", "boomerang", "arrow",
+          "bomb", "caltrop", "fireTrail", "holyBeam", "holyWater",
+        ];
+        for (const w of baseWeapons) {
+          if (!player.stats.weapons.includes(w)) player.stats.weapons.push(w);
+        }
+        for (const w of player.stats.weapons) {
+          player.stats.upgrades[w] = Math.min((player.stats.upgrades[w] ?? 0) + 3, 5);
+        }
+        console.log(`[yoink] warped to wave ${wave}, ${player.stats.weapons.length} weapons`);
+      },
+    };
+
     const announced = new Set<string>();
     const checkEvolutions = () => {
       for (const evo of WEAPON_EVOLUTIONS) {
