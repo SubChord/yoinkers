@@ -47,8 +47,8 @@ Verified in `GameScene.ts` lines 228-414:
 
 ## SAVE SCHEMA
 - Key: `yoinkers.save.v2`. Bump the `.v2` suffix on any breaking change — there is no migration logic.
-- Fields: `runsPlayed / winCount / totalEnemiesKilled / totalDamage / totalTimeMs`, `bestWave / bestLevel / bestTimeMs / bestEnemies`, `yoinks + lifetimeYoinks + lastYoinksEarned + metaUpgrades`, `unlockedMaps / clearedMaps / lastMapId`, `lastRun`, `allTimeDamage`.
-- Writes only happen in: `persistRun`, `purchaseMetaUpgrade`, `refundMetaUpgrades`, `setLastMap`, `resetSave`. No write-on-update.
+- Fields: `runsPlayed / winCount / totalEnemiesKilled / totalDamage / totalTimeMs`, `bestWave / bestLevel / bestTimeMs / bestEnemies`, `yoinks + lifetimeYoinks + lastYoinksEarned + metaUpgrades`, `unlockedMaps / clearedMaps / lastMapId`, `lastRun`, `allTimeDamage`, `selectedCharacter` (`"ninja" | "jesus"`; sanitizer downgrades to `"ninja"` if jesus selected without the `unlock-jesus` meta upgrade).
+- Writes only happen in: `persistRun`, `purchaseMetaUpgrade`, `refundMetaUpgrades`, `setLastMap`, `setSelectedCharacter`, `resetSave`. No write-on-update. `setSelectedCharacter` no-ops if `isCharacterUnlocked(save, id)` is false.
 - Forward-compatible via `{ ...cloneEmpty(), ...parsed, ... }` spread in `loadSave`. New optional fields just work.
 - `activeItem` and `activeItemCooldownMs` live on `PlayerStats` and are runtime-only; NOT persisted.
 

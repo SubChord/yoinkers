@@ -4,7 +4,7 @@
 Factory functions that build KAPLAY GameObjs and return `{ obj, ...state }` wrappers consumed by systems.
 
 ## FILE MAP
-- Player.ts — `createPlayer` / `updatePlayer`; sprite z=10, scale 2; 4-dir walk via frame offset (FACING_ROW, WALK_FPS=8, 4 frames).
+- Player.ts — `createPlayer(k, characterId?)` / `updatePlayer`; sprite z=10, scale 2; 4-dir walk via frame offset (FACING_ROW, WALK_FPS=8, 4 frames). Sprite key and starting weapon are resolved from `CHARACTER_SPRITES` / `CHARACTER_STARTING_WEAPONS` tables (ninja → `player-walk` + `shuriken`; jesus → `jesus-walk` + `holyBeam`).
 - Enemy.ts — `spawnEnemy` z=5 (boss z=6); `updateEnemy` chases player, flips via `flipX`, swaps `walk-up`/`walk-down` anims; `playDeathAnim` shrink+spin+fade over 0.3s then destroys; `destroyEnemy` plain destroy for non-kill cleanup.
 - Projectile.ts — `spawnProjectile` only; z=7 (ground=2); rotation only for linear/pierce/boomerang; orbit sprites try `play("spin")` in try/catch (katana orbit lacks the anim).
 - XpGem.ts — `spawnXpGem` z=3; `updateGem` returns `"idle" | "collected"`; tier picked by xp value (small/medium/large/huge).

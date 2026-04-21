@@ -13,7 +13,7 @@ Pure data directory. No runtime logic beyond weighted-random helpers, XP curve, 
 - `MusicDefs.ts` — BGM registry. `MusicTrack`, `MUSIC_TRACKS`, `DEFAULT_TRACK_ID`.
 - `QuestDefs.ts` — in-run quest goals + rewards. `QuestMetric`, `QuestReward`, `QUEST_DEFS` (array, not record).
 - `UpgradeDefs.ts` — level-up choice pool: weapon-unlock, weapon-upgrade, boost. `UpgradeDef`, `UPGRADE_DEFS`, `UPGRADES_BY_ID`.
-- `WeaponDefs.ts` — weapon stat blocks including evolutions. `WeaponId`, `WeaponStats`, `WEAPON_DEFS`, `WEAPON_IDS`.
+- `WeaponDefs.ts` — weapon stat blocks including evolutions + holy weapons. `WeaponId`, `WeaponStats`, `WEAPON_DEFS`, `WEAPON_IDS`. `holyBeam` is Jesus's starting weapon (no unlock entry — character-gated). `holyWater` is a generic unlock in the pool for both characters.
 
 ## CONVENTIONS
 - IDs are hand-maintained string-literal unions paired with `Record<Id, Def>`. Adding an entry requires updating both the union and the record — TS errors if out of sync.
@@ -30,6 +30,8 @@ Pure data directory. No runtime logic beyond weighted-random helpers, XP curve, 
 - Adding a new weapon requires ALL of: `WeaponId` union + `WEAPON_DEFS` entry + `UpgradeDefs` unlock entry + `WeaponSystem` fire switch case + sprite loaded in `main.ts`. Missing any one → silent failure (weapon offered but nothing fires, or never offered, or renders as missing sprite).
 - `spriteKey` typos fail silently at render time — KAPLAY draws nothing. Verify sprite is actually loaded.
 - **Item auto-loader convention** (`main.ts` item loop): only loads `assets/Items/Consumables/${item.id}.png` when `spriteKey === "item-" + id`. Items that break that pattern (e.g. `redBull` camelCase id vs `redbull.png` file; `novaBlast` reusing `weapon-bomb`) must be pre-loaded above the loop or share an already-loaded key, otherwise the loop's fetch throws. Gear (`assets/Items/Gear/<gearId>.png`) has no such guard — keep gear ids lowercase + file names exact.
+- **Jesus-only weapons** must not have a `unlock-*` entry in `UpgradeDefs` (otherwise they'd appear in the level-up pool for Ninja too). Jesus gets them via `CHARACTER_STARTING_WEAPONS` in `Player.ts` or via `weapon-upgrade` entries (upgrades are filtered by `isAvailable` on weapon ownership, so ninja won't see them).
+- **`unlock-jesus` meta upgrade** (`MetaUpgradeDefs.ts`) is `maxLevel: 1`, cost 500. It's iterated by `META_UPGRADE_ORDER` so ShopScene shows it automatically. `computeMetaBonuses` ignores it (no stat effect); the boolean lives in `save.metaUpgrades["unlock-jesus"]`.
 - `dualKatana` and `arcaneHalo` have `cooldownMs: 0` on purpose — they are persistent orbit weapons driven by update loop, not cooldown-gated fire events. Do not "fix" to non-zero.
 - Evolutions (`stormShuriken`, `arcaneHalo`, `warhammerKunai`, `arrowHail`, `megaBomb`, `bloodspikes`, `dualKatana`) have no unlock upgrade — they are granted by evolution logic pairing a base weapon with a gear.
 - `ActiveItemId` lives in `types/GameTypes`, not here — ItemDefs imports it.
