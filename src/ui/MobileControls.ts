@@ -2,6 +2,7 @@ import type { KAPLAYCtx, GameObj, Vec2 } from "kaplay";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/GameConfig";
 import {
   requestMobileAction,
+  resetMobileInput,
   setMobileMove,
 } from "../systems/MobileInput";
 
@@ -24,6 +25,7 @@ export interface MobileControls {
 }
 
 export function mountMobileControls(k: KAPLAYCtx): MobileControls {
+  resetMobileInput();
   const created: GameObj[] = [];
   const add = <T extends GameObj>(obj: T): T => {
     created.push(obj);

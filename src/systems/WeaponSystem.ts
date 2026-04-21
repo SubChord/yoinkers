@@ -75,10 +75,7 @@ export class WeaponSystem {
   }
 
   private fireWeapon(weaponId: WeaponId, nowMs: number): void {
-    try {
-      console.log(`[WS] fireWeapon: ${weaponId}`);
-      const stats = this.computeStats(weaponId);
-      console.log(`[WS] stats computed for ${weaponId}:`, JSON.stringify(stats));
+    const stats = this.computeStats(weaponId);
     const state = this.weaponStates.get(weaponId) ?? { lastFireMs: -Number.MAX_SAFE_INTEGER };
     this.weaponStates.set(weaponId, state);
 
@@ -137,9 +134,6 @@ export class WeaponSystem {
       case "samuraiSword":
         this.fireSamuraiSlash(stats);
         break;
-    }
-    } catch (err) {
-      console.error(`[WS] fireWeapon CRASH for ${weaponId}:`, err);
     }
   }
 
@@ -326,26 +320,33 @@ export class WeaponSystem {
 
   private fireArrowHail(stats: WeaponStats): void {
     const pierceLevel = this.player.stats.upgrades["arrow-pierce"] ?? 0;
+    const hasFireSynergy =
+      this.player.stats.weapons.includes("fireTrail") && pierceLevel > 0;
+    const damage = hasFireSynergy ? stats.damage * FIRE_ARROW_BONUS_MULT : stats.damage;
     const count = Math.max(8, stats.count);
     for (let i = 0; i < count; i += 1) {
       const angle = (Math.PI * 2 * i) / count;
       const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
-      this.projectiles.push(
-        spawnProjectile(this.k, {
-          kind: "pierce",
-          weapon: "arrowHail",
-          sprite: WEAPON_DEFS.arrowHail.spriteKey,
-          x: this.player.obj.pos.x,
-          y: this.player.obj.pos.y,
-          dir,
-          speed: stats.speed,
-          damage: stats.damage,
-          area: stats.area,
-          maxRange: stats.range,
-          piercesLeft: 3 + pierceLevel,
-          rotationOffset: 45,
-        }),
-      );
+      const proj = spawnProjectile(this.k, {
+        kind: "pierce",
+        weapon: "arrowHail",
+        sprite: WEAPON_DEFS.arrowHail.spriteKey,
+        x: this.player.obj.pos.x,
+        y: this.player.obj.pos.y,
+        dir,
+        speed: stats.speed,
+        damage,
+        area: stats.area,
+        maxRange: stats.range,
+        piercesLeft: 3 + pierceLevel,
+        rotationOffset: 45,
+      });
+
+      if (hasFireSynergy) {
+        proj.obj.color = this.k.rgb(255, 140, 30);
+      }
+
+      this.projectiles.push(proj);
     }
   }
 
@@ -464,7 +465,6 @@ export class WeaponSystem {
     stats: WeaponStats,
     opts: { radius: number; speed: number; scale: number },
   ): void {
-    console.log(`[WS] ensureOrbit: ${weaponId}, count=${stats.count}, sprite=${WEAPON_DEFS[weaponId].spriteKey}`);
     const existing = this.projectiles.filter((p) => p.kind === "orbit" && p.weapon === weaponId);
     const target = Math.max(1, stats.count);
 
@@ -513,7 +513,7 @@ export class WeaponSystem {
     for (let i = this.projectiles.length - 1; i >= 0; i -= 1) {
       const p = this.projectiles[i];
 
-      try {      if (p.kind === "orbit") {
+      if (p.kind === "orbit") {
         this.updateOrbit(p, dt);
         this.checkPersistentHits(p, nowMs, MAGIC_ORB_HIT_COOLDOWN_MS);
         continue;
@@ -602,9 +602,6 @@ export class WeaponSystem {
           p.obj.destroy();
           this.projectiles.splice(i, 1);
         }
-      }
-      } catch (err) {
-        console.error(`[WS] updateProjectiles CRASH for weapon=${p.weapon}, kind=${p.kind}:`, err);
       }
     }
   }

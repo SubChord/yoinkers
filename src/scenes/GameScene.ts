@@ -181,9 +181,6 @@ export function registerGameScene(k: KAPLAYCtx): void {
         if (!player.stats.weapons.includes(evo.from)) continue;
         if ((player.stats.gear[evo.gear] ?? 0) < 1) continue;
 
-        console.log(`[EVO] Evolving: ${evo.from} + ${evo.gear} → ${evo.to}`);
-        console.log(`[EVO] Weapons before:`, [...player.stats.weapons]);
-
         announced.add(evo.to);
         state.paused = true;
         playSfx(k, "sfx-yoink");
@@ -193,7 +190,6 @@ export function registerGameScene(k: KAPLAYCtx): void {
         if (!player.stats.weapons.includes(evo.to)) {
           player.stats.weapons.push(evo.to);
         }
-        console.log(`[EVO] Weapons after:`, [...player.stats.weapons]);
         showEvolutionPopup(k, {
           title: evo.title,
           subtitle: evo.subtitle,
@@ -257,7 +253,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       updatePlayer(k, player, dt);
 
       // Active item activation (SPACE / mobile tap — Mario Kart style, 1 slot)
-      const activePressed = k.isKeyDown("space") || consumeMobileAction();
+      const activePressed = k.isKeyPressed("space") || consumeMobileAction();
       if (
         player.stats.activeItem &&
         activePressed &&

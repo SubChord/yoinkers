@@ -34,6 +34,13 @@ export function consumeMobileAction(): boolean {
   return false;
 }
 
+export function resetMobileInput(): void {
+  state.dirX = 0;
+  state.dirY = 0;
+  state.active = false;
+  state.actionRequested = false;
+}
+
 export function isTouchDevice(): boolean {
   if (typeof window === "undefined") return false;
   return (

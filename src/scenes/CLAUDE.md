@@ -44,4 +44,3 @@ Each file exports `register{Name}Scene(k)` which calls `k.scene(name, handler)`.
 - **Upgrade menu**: level-ups bump `state.levelQueue`; `openUpgradeMenuIfQueued` drains one at a time, chaining the next via `onChoose` callback (lines 205-226).
 - **Evolutions**: `announced: Set<WeaponId>` ensures each evolution fires exactly once per run (line 170, 173, 180).
 - **Self-reentry**: `ShopScene` re-enters `shop` after buy/respec; `StatsScene` re-enters `stats` after reset — cheap full redraw pattern.
-- **Debug leftovers**: `checkEvolutions` still has 3 `console.log("[EVO] ...")` statements at lines ~177, 178, 189 — scheduled for cleanup.

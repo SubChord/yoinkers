@@ -53,7 +53,6 @@ export interface ProjectileSpawnOpts {
 }
 
 export function spawnProjectile(k: KAPLAYCtx, opts: ProjectileSpawnOpts): Projectile {
-  console.log(`[PROJ] spawnProjectile: weapon=${opts.weapon}, kind=${opts.kind}, sprite=${opts.sprite}`);
   const rotationOffset = opts.rotationOffset ?? 0;
   const rotation = Math.atan2(opts.dir.y, opts.dir.x) * (180 / Math.PI) + rotationOffset;
   const rotatable =
