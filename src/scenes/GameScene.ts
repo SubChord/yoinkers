@@ -17,6 +17,7 @@ import { ChestSystem } from "../systems/ChestSystem";
 import { EnemySpawner } from "../systems/EnemySpawner";
 import { GearSystem } from "../systems/GearSystem";
 import { ItemSystem } from "../systems/ItemSystem";
+import { consumeMobileAction, isTouchDevice } from "../systems/MobileInput";
 import { MusicSystem } from "../systems/MusicSystem";
 import { burstVfx } from "../systems/PickupVfx";
 import { QuestSystem } from "../systems/QuestSystem";
@@ -27,6 +28,7 @@ import { applyUpgrade, pickUpgradeChoices } from "../systems/UpgradeSystem";
 import { mountDamageOverlay } from "../ui/DamageOverlay";
 import { createHud, updateHud } from "../ui/HUD";
 import { mountMinimap } from "../ui/Minimap";
+import { mountMobileControls, type MobileControls } from "../ui/MobileControls";
 import { mountMusicSelector } from "../ui/MusicSelector";
 import { mountPauseButton } from "../ui/PauseButton";
 import { showEvolutionPopup } from "../ui/EvolutionPopup";
@@ -89,6 +91,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     music.selectTrack(mapDef.defaultTrackId);
     mountMusicSelector(k, music);
     const damageFlash = mountDamageOverlay(k);
+    const mobileControls: MobileControls | null = isTouchDevice() ? mountMobileControls(k) : null;
 
     interface GameState {
       startMs: number;
@@ -243,9 +246,10 @@ export function registerGameScene(k: KAPLAYCtx): void {
       updatePlayer(k, player, dt);
 
       // Red Bull activation
+      const redBullPressed = k.isKeyDown("space") || consumeMobileAction();
       if (
         player.stats.hasRedBull &&
-        k.isKeyDown("space") &&
+        redBullPressed &&
         nowMs >= player.stats.redBullCooldownMs &&
         player.stats.speedBuffExpiresMs <= nowMs
       ) {
@@ -315,6 +319,10 @@ export function registerGameScene(k: KAPLAYCtx): void {
         items: items.items,
         chests: chests.chests,
       });
+
+      if (mobileControls) {
+        mobileControls.showActionButton(player.stats.hasRedBull);
+      }
 
       if (player.stats.hp <= 0) {
         endGame(k, state, player, music, tracker, mapId, false);

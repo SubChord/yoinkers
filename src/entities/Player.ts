@@ -1,5 +1,6 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
 import { PLAYER_BASE_HP, PLAYER_BASE_SPEED, WORLD_SIZE } from "../config/GameConfig";
+import { getMobileInput } from "../systems/MobileInput";
 import type { Facing, PlayerStats } from "../types/GameTypes";
 
 export interface Player {
@@ -59,7 +60,11 @@ export function updatePlayer(k: KAPLAYCtx, player: Player, dt: number): void {
   if (k.isButtonDown("up")) dir.y -= 1;
   if (k.isButtonDown("down")) dir.y += 1;
 
-  const moving = dir.x !== 0 || dir.y !== 0;
+  const mobile = getMobileInput();
+  const useMobile = mobile.active && (mobile.dirX !== 0 || mobile.dirY !== 0);
+  const moveX = useMobile ? mobile.dirX : dir.x;
+  const moveY = useMobile ? mobile.dirY : dir.y;
+  const moving = moveX !== 0 || moveY !== 0;
 
   const now = Date.now();
   if (player.stats.damageBuffExpiresMs && now >= player.stats.damageBuffExpiresMs) {
@@ -73,16 +78,27 @@ export function updatePlayer(k: KAPLAYCtx, player: Player, dt: number): void {
 
   if (moving) {
     const effectiveSpeed = player.stats.speed * player.stats.speedBuffMult;
-    const step = dir.unit().scale(effectiveSpeed * dt);
-    const p = player.obj.pos.add(step);
-    p.x = k.clamp(p.x, -WORLD_SIZE / 2 + 24, WORLD_SIZE / 2 - 24);
-    p.y = k.clamp(p.y, -WORLD_SIZE / 2 + 24, WORLD_SIZE / 2 - 24);
-    player.obj.pos = p;
+    let stepX: number;
+    let stepY: number;
+    if (useMobile) {
+      const mag = Math.min(1, Math.hypot(moveX, moveY));
+      stepX = moveX * effectiveSpeed * dt;
+      stepY = moveY * effectiveSpeed * dt;
+      void mag;
+    } else {
+      const step = k.vec2(moveX, moveY).unit().scale(effectiveSpeed * dt);
+      stepX = step.x;
+      stepY = step.y;
+    }
+    const px = k.clamp(player.obj.pos.x + stepX, -WORLD_SIZE / 2 + 24, WORLD_SIZE / 2 - 24);
+    const py = k.clamp(player.obj.pos.y + stepY, -WORLD_SIZE / 2 + 24, WORLD_SIZE / 2 - 24);
+    player.obj.pos.x = px;
+    player.obj.pos.y = py;
 
-    if (Math.abs(dir.x) > Math.abs(dir.y)) {
-      player.facing = dir.x < 0 ? "left" : "right";
-    } else if (Math.abs(dir.y) > Math.abs(dir.x)) {
-      player.facing = dir.y < 0 ? "up" : "down";
+    if (Math.abs(moveX) > Math.abs(moveY)) {
+      player.facing = moveX < 0 ? "left" : "right";
+    } else if (Math.abs(moveY) > Math.abs(moveX)) {
+      player.facing = moveY < 0 ? "up" : "down";
     }
     // on exact diagonal, keep the current facing
   }
