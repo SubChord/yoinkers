@@ -132,11 +132,11 @@ export function updateHud(refs: HudRefs, state: HudState): void {
     const label = ACTIVE_ITEM_LABELS[s.activeItem] ?? s.activeItem;
 
     if (cooldownLeft > 0) {
-      setText(refs.activeItemText, `[SPACE] ${label} ${Math.ceil(cooldownLeft / 1000)}s`);
+      setText(refs.activeItemText, `(SPACE) ${label} ${Math.ceil(cooldownLeft / 1000)}s`);
       (refs.activeItemText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
         refs.k.rgb(160, 160, 160);
     } else {
-      setText(refs.activeItemText, `[SPACE] ${label}`);
+      setText(refs.activeItemText, `(SPACE) ${label}`);
       (refs.activeItemText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
         refs.k.rgb(255, 220, 40);
     }
