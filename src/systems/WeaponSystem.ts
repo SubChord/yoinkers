@@ -117,29 +117,40 @@ export class WeaponSystem {
     }
   }
 
+  private updateSamuraiSlash(p: Projectile): void {
+    const t = Math.min(1, p.lifetimeMs > 0 ? p.elapsedMs / p.lifetimeMs : 0);
+    const spread = Math.PI * 0.9;
+    const baseAngle = Math.atan2(p.dir.y, p.dir.x);
+    const angle = baseAngle - spread / 2 + spread * t;
+    const radius = 52;
+    const playerPos = this.player.obj.pos;
+    p.obj.pos.x = playerPos.x + Math.cos(angle) * radius;
+    p.obj.pos.y = playerPos.y + Math.sin(angle) * radius;
+    (p.obj as { angle?: number }).angle = (angle * 180) / Math.PI + 90;
+  }
+
   private fireSamuraiSlash(stats: WeaponStats): void {
     const p = this.player.obj.pos;
     const target = this.spawner.nearest(p.x, p.y);
-    const dir = target
-      ? this.k.vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y).unit()
-      : this.k.vec2(1, 0);
-    const offset = 42;
-    const sx = p.x + dir.x * offset;
-    const sy = p.y + dir.y * offset;
+    const rawDx = target ? target.obj.pos.x - p.x : 1;
+    const rawDy = target ? target.obj.pos.y - p.y : 0;
+    const len = Math.hypot(rawDx, rawDy) || 1;
+    const dir = this.k.vec2(rawDx / len, rawDy / len);
+
     this.projectiles.push(
       spawnProjectile(this.k, {
         kind: "ground",
         weapon: "samuraiSword",
         sprite: WEAPON_DEFS.samuraiSword.spriteKey,
-        x: sx,
-        y: sy,
+        x: p.x + dir.x * 48,
+        y: p.y + dir.y * 48,
         dir,
         speed: 0,
         damage: stats.damage,
         area: stats.area,
         maxRange: 0,
-        lifetimeMs: 320,
-        scale: 4.5,
+        lifetimeMs: 420,
+        scale: 5,
       }),
     );
   }
@@ -392,9 +403,8 @@ export class WeaponSystem {
       if (p.kind === "ground") {
         p.elapsedMs += dt * 1000;
         if (p.weapon === "samuraiSword") {
-          (p.obj as { angle?: number }).angle =
-            ((p.obj as { angle?: number }).angle ?? 0) + dt * 1800;
-          this.checkPersistentHits(p, nowMs, 500);
+          this.updateSamuraiSlash(p);
+          this.checkPersistentHits(p, nowMs, 600);
         } else {
           this.checkPersistentHits(p, nowMs, CALTROP_HIT_COOLDOWN_MS);
         }
