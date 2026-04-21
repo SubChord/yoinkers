@@ -10,6 +10,7 @@ export type EnemyId =
   | "octopus"
   | "mole"
   | "owl"
+  | "leaper"
   | "boss-slime"
   | "boss-spirit"
   | "boss-octopus"
@@ -96,6 +97,13 @@ export const ENEMY_DEFS: Record<EnemyId, EnemyDef> = {
     hp: 70, speed: 110, damage: 20, xpValue: 24,
     area: 22, minWave: 16, boss: false, scale: 1,
   },
+  leaper: {
+    id: "leaper",
+    spriteKey: "enemy-slime",
+    hp: 50, speed: 45, damage: 45, xpValue: 18,
+    area: 24, minWave: 8, boss: false, scale: 1.1,
+    tint: [80, 220, 80],
+  },
 
   "boss-slime": {
     id: "boss-slime",
@@ -129,7 +137,7 @@ export const ENEMY_DEFS: Record<EnemyId, EnemyDef> = {
 
 export const BASIC_ENEMY_IDS: EnemyId[] = [
   "slime", "bat", "skeleton", "mushroom", "snake",
-  "spider", "spirit", "racoon", "octopus", "mole", "owl",
+  "spider", "spirit", "racoon", "octopus", "mole", "owl", "leaper",
 ];
 
 export const BOSS_ENEMY_IDS: EnemyId[] = [

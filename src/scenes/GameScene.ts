@@ -391,6 +391,87 @@ export function registerGameScene(k: KAPLAYCtx): void {
       }
 
       spawner.update(dt, nowMs);
+
+      // Handle leaper explosions (collected after spawner.update)
+      for (const leaper of spawner.explodingLeapers) {
+        const lx = leaper.obj.pos.x;
+        const ly = leaper.obj.pos.y;
+        leaper.obj.destroy();
+
+        // AOE damage to player (respects iframes)
+        const LEAPER_BLAST_RADIUS = 110;
+        const pdx = lx - player.obj.pos.x;
+        const pdy = ly - player.obj.pos.y;
+        if (pdx * pdx + pdy * pdy <= LEAPER_BLAST_RADIUS * LEAPER_BLAST_RADIUS) {
+          if (nowMs - player.lastHitMs >= PLAYER_IFRAME_MS) {
+            player.lastHitMs = nowMs;
+            player.stats.hp = Math.max(0, player.stats.hp - leaper.damage);
+            playSfx(k, "sfx-hit");
+            damageFlash.flash();
+          }
+        }
+
+        // Explosion VFX: expanding shockwave ring
+        k.shake(6);
+        const ring = k.add([
+          k.circle(10),
+          k.pos(lx, ly),
+          k.anchor("center"),
+          k.color(255, 80, 30),
+          k.opacity(0.8),
+          k.scale(1),
+          k.z(12),
+        ]);
+        let rt = 0;
+        ring.onUpdate(() => {
+          rt += k.dt();
+          const rp = Math.min(rt / 0.35, 1);
+          try { (ring as any).scaleTo(1 + rp * 8); } catch { /* skip */ }
+          (ring as any).opacity = 0.8 * (1 - rp);
+          if (rp >= 1) ring.destroy();
+        });
+
+        // Inner flash
+        const flash = k.add([
+          k.circle(LEAPER_BLAST_RADIUS * 0.4),
+          k.pos(lx, ly),
+          k.anchor("center"),
+          k.color(255, 220, 80),
+          k.opacity(0.9),
+          k.z(13),
+        ]);
+        let ft = 0;
+        flash.onUpdate(() => {
+          ft += k.dt();
+          const fp = Math.min(ft / 0.2, 1);
+          (flash as any).opacity = 0.9 * (1 - fp);
+          if (fp >= 1) flash.destroy();
+        });
+
+        // Spark particles
+        for (let i = 0; i < 10; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const spd = 100 + Math.random() * 200;
+          const spark = k.add([
+            k.circle(k.rand(2, 4)),
+            k.pos(lx, ly),
+            k.anchor("center"),
+            k.color(255, k.rand(80, 200) | 0, 30),
+            k.opacity(1),
+            k.z(13),
+          ]);
+          let st = 0;
+          const sdx = Math.cos(angle) * spd;
+          const sdy = Math.sin(angle) * spd;
+          spark.onUpdate(() => {
+            st += k.dt();
+            spark.pos.x += sdx * k.dt();
+            spark.pos.y += sdy * k.dt();
+            (spark as any).opacity = Math.max(0, 1 - st / 0.4);
+            if (st >= 0.4) spark.destroy();
+          });
+        }
+      }
       weapons.update(nowMs, dt);
       chests.update(nowMs, dt);
       items.update(nowMs, dt);

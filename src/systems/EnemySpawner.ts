@@ -12,14 +12,16 @@ import {
   ENEMY_DEFS,
   type EnemyId,
 } from "../config/EnemyDefs";
-import { spawnEnemy, type Enemy, updateEnemy } from "../entities/Enemy";
+import { spawnEnemy, type Enemy, type EnemyEvent, updateEnemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 
 const STREAM_INTERVAL_MS = 2200;
 const STREAM_INTERVAL_FLOOR_MS = 700;
+const MAX_LEAPERS = 4;
 
 export class EnemySpawner {
   public enemies: Enemy[] = [];
+  public explodingLeapers: Enemy[] = [];
   private wave = 1;
   private lastStreamMs = 0;
 
@@ -44,8 +46,13 @@ export class EnemySpawner {
   }
 
   public update(dt: number, nowMs: number): void {
-    for (const enemy of this.enemies) {
-      updateEnemy(enemy, this.player, dt);
+    this.explodingLeapers = [];
+    for (let i = this.enemies.length - 1; i >= 0; i -= 1) {
+      const event = updateEnemy(this.enemies[i], this.player, dt);
+      if (event === "explode") {
+        const [leaper] = this.enemies.splice(i, 1);
+        this.explodingLeapers.push(leaper);
+      }
     }
 
     const interval = Math.max(
@@ -70,6 +77,11 @@ export class EnemySpawner {
   }
 
   private spawnAtRing(id: EnemyId, opts: { elite?: boolean; waveScale?: number }): void {
+    // Cap concurrent leapers
+    if (id === "leaper") {
+      const activeLeapers = this.enemies.filter((e) => e.typeId === "leaper").length;
+      if (activeLeapers >= MAX_LEAPERS) return;
+    }
     const angle = this.k.rand(0, Math.PI * 2);
     const distance = this.k.rand(SPAWN_MIN_RADIUS, SPAWN_MAX_RADIUS);
     const x = this.player.obj.pos.x + Math.cos(angle) * distance;
