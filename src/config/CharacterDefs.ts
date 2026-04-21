@@ -27,6 +27,14 @@ export const CHARACTER_DEFS: Record<CharacterId, CharacterDef> = {
     startingWeapon: "holyBeam",
     unlockCost: 500,
   },
+  catLady: {
+    id: "catLady",
+    label: "Crazy Cat Lady",
+    description: "Fires a laser pointer — her cats handle the rest.",
+    spriteKey: "catlady-walk",
+    startingWeapon: "laserPointer",
+    unlockCost: 750,
+  },
 };
 
-export const CHARACTER_ORDER: CharacterId[] = ["ninja", "jesus"];
+export const CHARACTER_ORDER: CharacterId[] = ["ninja", "jesus", "catLady"];

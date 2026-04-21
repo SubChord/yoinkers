@@ -170,6 +170,186 @@ function drawJesusSide(
   ctx.fillRect(17 - legOffset, 29, 4, 3);
 }
 
+/**
+ * 4x4 walk spritesheet for the Crazy Cat Lady.
+ * Rows: 0=down, 1=up, 2=left, 3=right. 4 walk frames per row.
+ */
+export function buildCatLadyWalkDataURL(): string {
+  const [canvas, ctx] = newCanvas(FRAME * 4, FRAME * 4);
+
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      ctx.save();
+      ctx.translate(col * FRAME, row * FRAME);
+      const legOffset = col === 1 ? -1 : col === 3 ? 1 : 0;
+      const bodyBob = col === 1 || col === 3 ? -1 : 0;
+      if (row === 0) drawCatLadyFront(ctx, legOffset, bodyBob);
+      else if (row === 1) drawCatLadyBack(ctx, legOffset, bodyBob);
+      else drawCatLadySide(ctx, legOffset, bodyBob, row === 3);
+      ctx.restore();
+    }
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
+function drawShoulderCat(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  // Tiny orange tabby clinging to the shoulder
+  ctx.fillStyle = "#d68828";
+  ctx.fillRect(x, y, 4, 3);
+  ctx.fillRect(x, y - 1, 1, 1); // left ear
+  ctx.fillRect(x + 3, y - 1, 1, 1); // right ear
+  ctx.fillStyle = "#000";
+  ctx.fillRect(x + 1, y + 1, 1, 1); // eye
+  ctx.fillRect(x + 2, y + 1, 1, 1); // eye
+}
+
+function drawCatLadyFront(
+  ctx: CanvasRenderingContext2D,
+  legOffset: number,
+  bodyBob: number,
+): void {
+  // Hair (gray bun)
+  ctx.fillStyle = "#bababa";
+  ctx.fillRect(10, 6, 12, 5);
+  ctx.fillRect(13, 4, 6, 3); // bun
+  ctx.fillStyle = "#e0e0e0";
+  ctx.fillRect(14, 5, 4, 1); // bun highlight
+
+  // Head
+  ctx.fillStyle = "#f0c9a4";
+  ctx.fillRect(11, 10, 10, 9);
+
+  // Glasses
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(11, 13, 4, 3);
+  ctx.fillRect(17, 13, 4, 3);
+  ctx.fillRect(15, 14, 2, 1); // bridge
+  ctx.fillStyle = "#cfe7ff";
+  ctx.fillRect(12, 14, 2, 1);
+  ctx.fillRect(18, 14, 2, 1);
+
+  // Mouth
+  ctx.fillStyle = "#8a4a4a";
+  ctx.fillRect(14, 18, 4, 1);
+
+  // Cardigan / body (pink)
+  ctx.fillStyle = "#d87ca0";
+  ctx.fillRect(8, 20 + bodyBob, 16, 9 - bodyBob);
+
+  // Cardigan edge (darker pink)
+  ctx.fillStyle = "#a6537a";
+  ctx.fillRect(15, 20 + bodyBob, 2, 9 - bodyBob);
+
+  // Sleeves
+  ctx.fillStyle = "#c06080";
+  ctx.fillRect(7, 22 + bodyBob, 2, 5);
+  ctx.fillRect(23, 22 + bodyBob, 2, 5);
+
+  // Shoulder cat
+  drawShoulderCat(ctx, 23, 20 + bodyBob);
+
+  // Slippers
+  ctx.fillStyle = "#6a4a3a";
+  ctx.fillRect(10 + legOffset, 29, 4, 3);
+  ctx.fillRect(18 - legOffset, 29, 4, 3);
+}
+
+function drawCatLadyBack(
+  ctx: CanvasRenderingContext2D,
+  legOffset: number,
+  bodyBob: number,
+): void {
+  // Hair covering the whole back of the head
+  ctx.fillStyle = "#bababa";
+  ctx.fillRect(9, 6, 14, 14);
+  ctx.fillRect(13, 4, 6, 3); // bun
+  ctx.fillStyle = "#e0e0e0";
+  ctx.fillRect(14, 5, 4, 1);
+
+  // Cardigan back
+  ctx.fillStyle = "#d87ca0";
+  ctx.fillRect(8, 20 + bodyBob, 16, 9 - bodyBob);
+
+  // Sleeves
+  ctx.fillStyle = "#c06080";
+  ctx.fillRect(7, 22 + bodyBob, 2, 5);
+  ctx.fillRect(23, 22 + bodyBob, 2, 5);
+
+  // Shoulder cat (back view — just a lump)
+  ctx.fillStyle = "#d68828";
+  ctx.fillRect(8, 20 + bodyBob, 3, 3);
+
+  // Slippers
+  ctx.fillStyle = "#6a4a3a";
+  ctx.fillRect(10 + legOffset, 29, 4, 3);
+  ctx.fillRect(18 - legOffset, 29, 4, 3);
+}
+
+function drawCatLadySide(
+  ctx: CanvasRenderingContext2D,
+  legOffset: number,
+  bodyBob: number,
+  facingRight: boolean,
+): void {
+  if (facingRight) {
+    ctx.translate(FRAME, 0);
+    ctx.scale(-1, 1);
+  }
+
+  // Hair (profile view — bun at back)
+  ctx.fillStyle = "#bababa";
+  ctx.fillRect(11, 6, 12, 13);
+  ctx.fillRect(17, 4, 6, 3); // bun at back
+  ctx.fillStyle = "#e0e0e0";
+  ctx.fillRect(18, 5, 4, 1);
+
+  // Face profile
+  ctx.fillStyle = "#f0c9a4";
+  ctx.fillRect(9, 10, 9, 9);
+
+  // Glasses (single lens from profile)
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(10, 13, 4, 3);
+  ctx.fillStyle = "#cfe7ff";
+  ctx.fillRect(11, 14, 2, 1);
+
+  // Cardigan body
+  ctx.fillStyle = "#d87ca0";
+  ctx.fillRect(9, 20 + bodyBob, 14, 9 - bodyBob);
+
+  // Darker cardigan edge
+  ctx.fillStyle = "#a6537a";
+  ctx.fillRect(9, 20 + bodyBob, 2, 9 - bodyBob);
+
+  // Shoulder cat
+  drawShoulderCat(ctx, 15, 20 + bodyBob);
+
+  // Slippers
+  ctx.fillStyle = "#6a4a3a";
+  ctx.fillRect(11 + legOffset, 29, 4, 3);
+  ctx.fillRect(17 - legOffset, 29, 4, 3);
+}
+
+/** 10x10 red laser dot with glow halo. */
+export function buildLaserDotDataURL(): string {
+  const [canvas, ctx] = newCanvas(10, 10);
+
+  // Outer glow
+  const grad = ctx.createRadialGradient(5, 5, 0, 5, 5, 5);
+  grad.addColorStop(0, "rgba(255, 80, 80, 1)");
+  grad.addColorStop(0.35, "rgba(255, 40, 40, 0.75)");
+  grad.addColorStop(1, "rgba(255, 0, 0, 0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 10, 10);
+
+  // Hot core
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(4, 4, 2, 2);
+
+  return canvas.toDataURL("image/png");
+}
+
 /** 32x8 golden beam, single frame. */
 export function buildHolyBeamDataURL(): string {
   const [canvas, ctx] = newCanvas(32, 8);

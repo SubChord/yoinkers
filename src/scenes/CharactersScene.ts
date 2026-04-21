@@ -12,10 +12,15 @@ import {
   togglePoophood,
 } from "../systems/SaveStore";
 
-const CARD_WIDTH = 420;
 const CARD_HEIGHT = 440;
-const CARD_GAP = 40;
+const CARD_GAP = 20;
 const CARD_Y = 120;
+const CARD_MARGIN_X = 20;
+
+function cardWidthFor(count: number): number {
+  const usable = GAME_WIDTH - CARD_MARGIN_X * 2;
+  return Math.floor((usable - (count - 1) * CARD_GAP) / count);
+}
 
 export function registerCharactersScene(k: KAPLAYCtx): void {
   k.scene("characters", () => {
@@ -35,7 +40,8 @@ export function registerCharactersScene(k: KAPLAYCtx): void {
     ]);
 
     const save = loadSave();
-    const totalW = CHARACTER_ORDER.length * CARD_WIDTH + (CHARACTER_ORDER.length - 1) * CARD_GAP;
+    const cardWidth = cardWidthFor(CHARACTER_ORDER.length);
+    const totalW = CHARACTER_ORDER.length * cardWidth + (CHARACTER_ORDER.length - 1) * CARD_GAP;
     const firstX = (GAME_WIDTH - totalW) / 2;
 
     const yoinksLabel = k.add([
@@ -48,7 +54,14 @@ export function registerCharactersScene(k: KAPLAYCtx): void {
 
     CHARACTER_ORDER.forEach((id, idx) => {
       const def = CHARACTER_DEFS[id];
-      drawCharacterCard(k, def, firstX + idx * (CARD_WIDTH + CARD_GAP), CARD_Y, yoinksLabel);
+      drawCharacterCard(
+        k,
+        def,
+        firstX + idx * (cardWidth + CARD_GAP),
+        CARD_Y,
+        cardWidth,
+        yoinksLabel,
+      );
     });
 
     const backBtn = k.add([
@@ -163,10 +176,11 @@ function drawCharacterCard(
   def: CharacterDef,
   x: number,
   y: number,
+  cardWidth: number,
   yoinksLabel: ReturnType<KAPLAYCtx["add"]>,
 ): void {
   const bg = k.add([
-    k.rect(CARD_WIDTH, CARD_HEIGHT, { radius: 12 }),
+    k.rect(cardWidth, CARD_HEIGHT, { radius: 12 }),
     k.color(20, 38, 28),
     k.outline(2, k.rgb(130, 170, 146)),
     k.pos(x, y),
@@ -177,7 +191,7 @@ function drawCharacterCard(
   // Portrait — use frame 0 of the walk sheet (facing down)
   k.add([
     k.sprite(def.spriteKey, { frame: 0 }),
-    k.pos(x + CARD_WIDTH / 2, y + 70),
+    k.pos(x + cardWidth / 2, y + 70),
     k.anchor("center"),
     k.scale(5),
     k.fixed(),
@@ -187,15 +201,15 @@ function drawCharacterCard(
     k.text(def.label, { size: 28 }),
     k.color(255, 245, 200),
     k.anchor("center"),
-    k.pos(x + CARD_WIDTH / 2, y + 170),
+    k.pos(x + cardWidth / 2, y + 170),
     k.fixed(),
   ]);
 
   k.add([
-    k.text(def.description, { size: 16, width: CARD_WIDTH - 40, align: "center" }),
+    k.text(def.description, { size: 16, width: cardWidth - 40, align: "center" }),
     k.color(220, 232, 220),
     k.anchor("center"),
-    k.pos(x + CARD_WIDTH / 2, y + 212),
+    k.pos(x + cardWidth / 2, y + 212),
     k.fixed(),
   ]);
 
@@ -204,12 +218,12 @@ function drawCharacterCard(
     k.text(`Starts with: ${startingWeapon.label}`, { size: 16 }),
     k.color(180, 220, 200),
     k.anchor("center"),
-    k.pos(x + CARD_WIDTH / 2, y + 272),
+    k.pos(x + cardWidth / 2, y + 272),
     k.fixed(),
   ]);
 
   // Action button at the bottom of the card
-  const btnX = x + CARD_WIDTH / 2;
+  const btnX = x + cardWidth / 2;
   const btnY = y + CARD_HEIGHT - 52;
 
   const save = loadSave();
@@ -238,7 +252,7 @@ function drawCharacterCard(
       : [180, 160, 160];
 
   const btn = k.add([
-    k.rect(CARD_WIDTH - 60, 44, { radius: 8 }),
+    k.rect(cardWidth - 60, 44, { radius: 8 }),
     k.color(bgColor[0], bgColor[1], bgColor[2]),
     k.outline(2, k.rgb(outlineColor[0], outlineColor[1], outlineColor[2])),
     k.pos(btnX, btnY),

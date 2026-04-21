@@ -16,7 +16,8 @@ export type WeaponId =
   | "fireTrail"
   | "holyBeam"
   | "holyWater"
-  | "judasPriest";
+  | "judasPriest"
+  | "laserPointer";
 
 export interface WeaponStats {
   damage: number;
@@ -161,6 +162,13 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     description: "Shred a diabolical power-chord that rains searing shockwaves on all sides.",
     spriteKey: "weapon-shockwave",
     base: { damage: 22, cooldownMs: 500, speed: 560, range: 460, count: 10, area: 20 },
+  },
+  laserPointer: {
+    id: "laserPointer",
+    label: "Laser Pointer",
+    description: "A chaotic red dot that pierces everything — her cats chase it to death.",
+    spriteKey: "laser-dot",
+    base: { damage: 10, cooldownMs: 280, speed: 900, range: 520, count: 1, area: 14 },
   },
 };
 

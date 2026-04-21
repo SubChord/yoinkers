@@ -3,10 +3,12 @@ console.log(`%c[yoinkers] build ${__COMMIT_HASH__}`, "color: #0f0; font-weight: 
 
 import kaplay from "kaplay";
 import {
+  buildCatLadyWalkDataURL,
   buildGuitarDataURL,
   buildHolyBeamDataURL,
   buildHolyWaterDataURL,
   buildJesusWalkDataURL,
+  buildLaserDotDataURL,
   buildPoophoodDataURL,
   buildShockwaveDataURL,
 } from "./assets/SpriteGen";
@@ -69,6 +71,12 @@ k.loadSprite("jesus-walk", buildJesusWalkDataURL(), {
   anims: PLAYER_ANIMS,
 });
 
+k.loadSprite("catlady-walk", buildCatLadyWalkDataURL(), {
+  sliceX: 4,
+  sliceY: 4,
+  anims: PLAYER_ANIMS,
+});
+
 const ENEMY_SPRITES: Array<{ key: string; path: string }> = [
   { key: "enemy-slime", path: "assets/Actor/Monster/Slime/SpriteSheet.png" },
   { key: "enemy-skel", path: "assets/Actor/Monster/SkullBlue/SpriteSheet.png" },
@@ -113,6 +121,7 @@ k.loadSprite("fire-trail", "assets/Items/Weapon/fire-trail.png");
 k.loadSprite("fire-ground", "assets/Items/Weapon/fire-ground.png");
 k.loadSprite("holy-beam", buildHolyBeamDataURL());
 k.loadSprite("holy-water", buildHolyWaterDataURL());
+k.loadSprite("laser-dot", buildLaserDotDataURL());
 k.loadSprite("cosmetic-poophood", buildPoophoodDataURL());
 k.loadSprite("cosmetic-guitar", buildGuitarDataURL());
 k.loadSprite("weapon-shockwave", buildShockwaveDataURL());

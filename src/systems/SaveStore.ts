@@ -338,7 +338,7 @@ function sanitizeCharacter(
   return "ninja";
 }
 
-const VALID_CHARACTERS: CharacterId[] = ["ninja", "jesus"];
+const VALID_CHARACTERS: CharacterId[] = ["ninja", "jesus", "catLady"];
 
 function sanitizeUnlockedCharacters(
   value: CharacterId[] | undefined,

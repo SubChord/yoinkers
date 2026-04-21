@@ -320,6 +320,34 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
   },
 
   {
+    id: "laserPointer-damage",
+    kind: "weapon-upgrade",
+    label: "Brighter Beam",
+    description: "+4 laser pointer damage.",
+    maxLevel: 5,
+    icon: "laser-dot",
+    weapon: "laserPointer",
+  },
+  {
+    id: "laserPointer-cooldown",
+    kind: "weapon-upgrade",
+    label: "Twitchier Paws",
+    description: "-15% laser pointer cooldown.",
+    maxLevel: 4,
+    icon: "laser-dot",
+    weapon: "laserPointer",
+  },
+  {
+    id: "laserPointer-count",
+    kind: "weapon-upgrade",
+    label: "Split Beam",
+    description: "+1 laser dot per click.",
+    maxLevel: 2,
+    icon: "laser-dot",
+    weapon: "laserPointer",
+  },
+
+  {
     id: "boost-speed",
     kind: "boost",
     label: "Swift Feet",

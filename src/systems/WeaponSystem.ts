@@ -148,6 +148,9 @@ export class WeaponSystem {
       case "judasPriest":
         this.fireJudasPriest(stats);
         break;
+      case "laserPointer":
+        this.fireLaserPointer(stats);
+        break;
     }
   }
 
@@ -170,6 +173,37 @@ export class WeaponSystem {
           maxRange: stats.range,
           piercesLeft: 99,
           rotationOffset: 0,
+        }),
+      );
+    }
+  }
+
+  private fireLaserPointer(stats: WeaponStats): void {
+    const p = this.player.obj.pos;
+    const target = this.spawner.nearest(p.x, p.y);
+    const baseDir = target
+      ? this.k.vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y).unit()
+      : this.k.vec2(1, 0);
+    const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    for (let i = 0; i < stats.count; i += 1) {
+      const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.22;
+      const angle = baseAngle + offset;
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "pierce",
+          weapon: "laserPointer",
+          sprite: WEAPON_DEFS.laserPointer.spriteKey,
+          x: p.x,
+          y: p.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+          piercesLeft: 99,
+          rotationOffset: 0,
+          scale: 2,
         }),
       );
     }
@@ -877,6 +911,7 @@ const WEAPON_HIT_COLORS: Partial<Record<WeaponId, [number, number, number]>> = {
   fireTrail: [255, 100, 20],
   holyBeam: [255, 245, 180],
   holyWater: [140, 220, 255],
+  laserPointer: [255, 60, 60],
 };
 
 function enemyId(enemy: Enemy): number {
@@ -904,5 +939,6 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "holyBeam": return 8;
     case "holyWater": return 4;
     case "judasPriest": return 6;
+    case "laserPointer": return 4;
   }
 }
