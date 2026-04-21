@@ -1,6 +1,7 @@
 import type { WeaponId } from "./WeaponDefs";
+import type { ActiveItemId } from "../types/GameTypes";
 
-export type UpgradeKind = "weapon-unlock" | "weapon-upgrade" | "boost";
+export type UpgradeKind = "weapon-unlock" | "weapon-upgrade" | "boost" | "active-item";
 
 export interface UpgradeDef {
   id: string;
@@ -10,6 +11,7 @@ export interface UpgradeDef {
   maxLevel: number;
   icon?: string;
   weapon?: WeaponId;
+  activeItem?: ActiveItemId;
 }
 
 export const UPGRADE_DEFS: UpgradeDef[] = [
@@ -314,11 +316,21 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
   },
   {
     id: "unlock-redBull",
-    kind: "boost",
+    kind: "active-item",
     label: "Red Bull",
-    description: "Press SPACE for a 2.5s mega speed boost. 12s cooldown.",
+    description: "[SPACE] 2.5s mega speed boost. 12s cooldown. Replaces current active.",
     maxLevel: 1,
     icon: "item-redbull",
+    activeItem: "redBull",
+  },
+  {
+    id: "unlock-novaBlast",
+    kind: "active-item",
+    label: "Nova Blast",
+    description: "[SPACE] Massive explosion around you. 18s cooldown. Replaces current active.",
+    maxLevel: 1,
+    icon: "weapon-bomb",
+    activeItem: "novaBlast",
   },
 ];
 

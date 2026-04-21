@@ -2,6 +2,12 @@ import type { KAPLAYCtx, GameObj } from "kaplay";
 import { GAME_WIDTH, SCORE_WAVE_MULTIPLIER, XP_PER_LEVEL } from "../config/GameConfig";
 import { GEAR_DEFS, GEAR_IDS, type GearId } from "../config/GearDefs";
 import type { Player } from "../entities/Player";
+import type { ActiveItemId } from "../types/GameTypes";
+
+const ACTIVE_ITEM_LABELS: Record<ActiveItemId, string> = {
+  redBull: "Red Bull",
+  novaBlast: "Allahu akbar",
+};
 
 interface GearIconRef {
   id: GearId;
@@ -18,8 +24,8 @@ export interface HudRefs {
   scoreText: GameObj;
   weaponsText: GameObj;
   gearIcons: Map<GearId, GearIconRef>;
-  redBullIcon: GameObj;
-  redBullText: GameObj;
+  activeItemIcon: GameObj;
+  activeItemText: GameObj;
 }
 
 export function createHud(k: KAPLAYCtx): HudRefs {
@@ -63,8 +69,8 @@ export function createHud(k: KAPLAYCtx): HudRefs {
     gearIcons.set(id, { id, sprite, count });
   });
 
-  // Red Bull cooldown indicator (hidden until unlocked)
-  const redBullIcon = k.add([
+  // Active item indicator (hidden until one is picked)
+  const activeItemIcon = k.add([
     k.sprite("item-redbull"),
     k.pos(GAME_WIDTH - 220, 54),
     k.scale(2),
@@ -72,7 +78,7 @@ export function createHud(k: KAPLAYCtx): HudRefs {
     k.fixed(),
     k.z(100),
   ]);
-  const redBullText = k.add([
+  const activeItemText = k.add([
     k.text("", { size: 16 }),
     k.pos(GAME_WIDTH - 186, 58),
     k.color(255, 220, 40),
@@ -80,7 +86,7 @@ export function createHud(k: KAPLAYCtx): HudRefs {
     k.z(100),
   ]);
 
-  return { k, hpText, xpText, waveText, timerText, scoreText, weaponsText, gearIcons, redBullIcon, redBullText };
+  return { k, hpText, xpText, waveText, timerText, scoreText, weaponsText, gearIcons, activeItemIcon, activeItemText };
 }
 
 export interface HudState {
@@ -118,26 +124,25 @@ export function updateHud(refs: HudRefs, state: HudState): void {
     setText(icon.count, count > 1 ? `x${count}` : count === 1 ? "" : "");
   }
 
-  // Red Bull cooldown
-  if (s.hasRedBull) {
-    (refs.redBullIcon as unknown as { opacity: number }).opacity = 1;
+  // Active item cooldown (Mario Kart style — 1 slot)
+  if (s.activeItem) {
+    (refs.activeItemIcon as unknown as { opacity: number }).opacity = 1;
     const now = Date.now();
-    const cooldownLeft = Math.max(0, s.redBullCooldownMs - now);
-    const isActive = s.speedBuffExpiresMs > now && s.speedBuffMult > 1.5;
-    if (isActive) {
-      const activeLeft = Math.ceil((s.speedBuffExpiresMs - now) / 1000 * 10) / 10;
-      setText(refs.redBullText, `BOOST! ${activeLeft.toFixed(1)}s`);
-      (refs.redBullText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
-        refs.k.rgb(255, 255, 100);
-    } else if (cooldownLeft > 0) {
-      setText(refs.redBullText, `[SPACE] ${Math.ceil(cooldownLeft / 1000)}s`);
-      (refs.redBullText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
+    const cooldownLeft = Math.max(0, s.activeItemCooldownMs - now);
+    const label = ACTIVE_ITEM_LABELS[s.activeItem] ?? s.activeItem;
+
+    if (cooldownLeft > 0) {
+      setText(refs.activeItemText, `[SPACE] ${label} ${Math.ceil(cooldownLeft / 1000)}s`);
+      (refs.activeItemText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
         refs.k.rgb(160, 160, 160);
     } else {
-      setText(refs.redBullText, "[SPACE] Ready!");
-      (refs.redBullText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
+      setText(refs.activeItemText, `[SPACE] ${label}`);
+      (refs.activeItemText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
         refs.k.rgb(255, 220, 40);
     }
+  } else {
+    (refs.activeItemIcon as unknown as { opacity: number }).opacity = 0;
+    setText(refs.activeItemText, "");
   }
 }
 

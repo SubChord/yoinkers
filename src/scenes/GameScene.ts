@@ -19,7 +19,7 @@ import { GearSystem } from "../systems/GearSystem";
 import { ItemSystem } from "../systems/ItemSystem";
 import { consumeMobileAction, isTouchDevice } from "../systems/MobileInput";
 import { MusicSystem } from "../systems/MusicSystem";
-import { burstVfx } from "../systems/PickupVfx";
+import { burstVfx, impactVfx } from "../systems/PickupVfx";
 import { QuestSystem } from "../systems/QuestSystem";
 import { currentMetaBonuses, persistRun } from "../systems/SaveStore";
 import { StatsTracker } from "../systems/StatsTracker";
@@ -245,52 +245,129 @@ export function registerGameScene(k: KAPLAYCtx): void {
 
       updatePlayer(k, player, dt);
 
-      // Red Bull activation
-      const redBullPressed = k.isKeyDown("space") || consumeMobileAction();
+      // Active item activation (SPACE / mobile tap — Mario Kart style, 1 slot)
+      const activePressed = k.isKeyDown("space") || consumeMobileAction();
       if (
-        player.stats.hasRedBull &&
-        redBullPressed &&
-        nowMs >= player.stats.redBullCooldownMs &&
-        player.stats.speedBuffExpiresMs <= nowMs
+        player.stats.activeItem &&
+        activePressed &&
+        nowMs >= player.stats.activeItemCooldownMs
       ) {
-        const REDBULL_DURATION_MS = 2500;
-        const REDBULL_COOLDOWN_MS = 12000;
-        const REDBULL_SPEED_MULT = 2.2;
-        player.stats.speedBuffMult = REDBULL_SPEED_MULT;
-        player.stats.speedBuffExpiresMs = nowMs + REDBULL_DURATION_MS;
-        player.stats.redBullCooldownMs = nowMs + REDBULL_COOLDOWN_MS;
-        playSfx(k, "sfx-levelup");
+        switch (player.stats.activeItem) {
+          case "redBull": {
+            const REDBULL_DURATION_MS = 2500;
+            const REDBULL_COOLDOWN_MS = 12000;
+            player.stats.speedBuffMult = 2.2;
+            player.stats.speedBuffExpiresMs = nowMs + REDBULL_DURATION_MS;
+            player.stats.activeItemCooldownMs = nowMs + REDBULL_COOLDOWN_MS;
+            playSfx(k, "sfx-levelup");
 
-        // Burst VFX
-        burstVfx(k, {
-          x: player.obj.pos.x,
-          y: player.obj.pos.y,
-          color: [255, 220, 40],
-          sparkles: 10,
-          ringEnd: 40,
-          duration: 0.4,
-        });
+            burstVfx(k, {
+              x: player.obj.pos.x,
+              y: player.obj.pos.y,
+              color: [255, 220, 40],
+              sparkles: 10,
+              ringEnd: 40,
+              duration: 0.4,
+            });
 
-        // Speed lines that follow the player briefly
-        for (let i = 0; i < 6; i++) {
-          const offsetX = k.rand(-16, 16);
-          const offsetY = k.rand(-10, 10);
-          const line = k.add([
-            k.rect(k.rand(12, 24), 2),
-            k.pos(player.obj.pos.x + offsetX, player.obj.pos.y + offsetY),
-            k.anchor("center"),
-            k.color(255, 255, 100),
-            k.opacity(0.8),
-            k.z(9),
-          ]);
-          const fadeTime = k.rand(0.3, 0.6);
-          let elapsed = 0;
-          line.onUpdate(() => {
-            elapsed += k.dt();
-            (line as unknown as { opacity: number }).opacity = 0.8 * (1 - elapsed / fadeTime);
-            line.pos.x -= 120 * k.dt();
-            if (elapsed >= fadeTime) line.destroy();
-          });
+            for (let i = 0; i < 6; i++) {
+              const offsetX = k.rand(-16, 16);
+              const offsetY = k.rand(-10, 10);
+              const line = k.add([
+                k.rect(k.rand(12, 24), 2),
+                k.pos(player.obj.pos.x + offsetX, player.obj.pos.y + offsetY),
+                k.anchor("center"),
+                k.color(255, 255, 100),
+                k.opacity(0.8),
+                k.z(9),
+              ]);
+              const fadeTime = k.rand(0.3, 0.6);
+              let elapsed = 0;
+              line.onUpdate(() => {
+                elapsed += k.dt();
+                (line as unknown as { opacity: number }).opacity = 0.8 * (1 - elapsed / fadeTime);
+                line.pos.x -= 120 * k.dt();
+                if (elapsed >= fadeTime) line.destroy();
+              });
+            }
+            break;
+          }
+          case "novaBlast": {
+            const NOVA_RADIUS = 200;
+            const NOVA_DAMAGE = 250;
+            const NOVA_COOLDOWN_MS = 18000;
+            player.stats.activeItemCooldownMs = nowMs + NOVA_COOLDOWN_MS;
+            playSfx(k, "sfx-hit");
+
+            for (let ring = 0; ring < 3; ring++) {
+              const delay = ring * 0.08;
+              const ringObj = k.add([
+                k.circle(8),
+                k.pos(player.obj.pos.x, player.obj.pos.y),
+                k.anchor("center"),
+                k.color(255, 100 - ring * 30, 20),
+                k.opacity(0.9),
+                k.z(50),
+                k.outline(3, k.rgb(255, 200, 60)),
+              ]);
+              let t = -delay;
+              ringObj.onUpdate(() => {
+                t += k.dt();
+                if (t < 0) return;
+                const progress = Math.min(t / 0.4, 1);
+                const r = NOVA_RADIUS * progress;
+                (ringObj as unknown as { radius: number }).radius = r;
+                (ringObj as unknown as { opacity: number }).opacity = 0.9 * (1 - progress);
+                if (progress >= 1) ringObj.destroy();
+              });
+            }
+
+            const flash = k.add([
+              k.rect(k.width(), k.height()),
+              k.pos(0, 0),
+              k.color(255, 200, 60),
+              k.opacity(0.5),
+              k.fixed(),
+              k.z(200),
+            ]);
+            let flashT = 0;
+            flash.onUpdate(() => {
+              flashT += k.dt();
+              (flash as unknown as { opacity: number }).opacity = 0.5 * (1 - flashT / 0.25);
+              if (flashT >= 0.25) flash.destroy();
+            });
+
+            k.shake(8);
+
+            const px = player.obj.pos.x;
+            const py = player.obj.pos.y;
+            const r2 = NOVA_RADIUS * NOVA_RADIUS;
+            for (let i = spawner.enemies.length - 1; i >= 0; i--) {
+              const e = spawner.enemies[i];
+              const dx = e.obj.pos.x - px;
+              const dy = e.obj.pos.y - py;
+              if (dx * dx + dy * dy <= r2) {
+                e.hp -= NOVA_DAMAGE;
+                impactVfx(k, {
+                  x: e.obj.pos.x,
+                  y: e.obj.pos.y,
+                  color: [255, 160, 40],
+                  radius: 14,
+                  kill: e.hp <= 0,
+                });
+                if (e.hp <= 0) {
+                  gems.push(spawnXpGem(k, e.obj.pos.x, e.obj.pos.y, e.xpValue));
+                  items.onEnemyKilled(e, e.isElite);
+                  gear.onEnemyKilled(e);
+                  quests.onKill(e.isElite, e.isBoss);
+                  playDeathAnim(k, e);
+                  spawner.removeAt(i);
+                  state.enemiesKilled += 1;
+                }
+              }
+            }
+            break;
+          }
         }
       }
 
@@ -321,7 +398,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       });
 
       if (mobileControls) {
-        mobileControls.showActionButton(player.stats.hasRedBull);
+        mobileControls.showActionButton(player.stats.activeItem !== null);
       }
 
       if (player.stats.hp <= 0) {

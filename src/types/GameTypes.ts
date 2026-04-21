@@ -3,6 +3,8 @@ import type { WeaponId } from "../config/WeaponDefs";
 
 export type Facing = "down" | "up" | "left" | "right";
 
+export type ActiveItemId = "redBull" | "novaBlast";
+
 export interface PlayerStats {
   hp: number;
   maxHp: number;
@@ -18,8 +20,8 @@ export interface PlayerStats {
   speedBuffMult: number;
   damageBuffExpiresMs: number;
   speedBuffExpiresMs: number;
-  hasRedBull: boolean;
-  redBullCooldownMs: number;
+  activeItem: ActiveItemId | null;
+  activeItemCooldownMs: number;
   weapons: WeaponId[];
   upgrades: Record<string, number>;
   gear: Partial<Record<GearId, number>>;
