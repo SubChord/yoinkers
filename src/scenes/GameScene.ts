@@ -40,7 +40,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     drawWorld(k, mapDef.palette);
 
     const player = createPlayer(k);
-    applyMetaBonuses(player);
+    const pendingStartLevels = applyMetaBonuses(player);
     const spawner = new EnemySpawner(k, player);
     const gems: XpGem[] = [];
     const tracker = new StatsTracker();
@@ -110,6 +110,14 @@ export function registerGameScene(k: KAPLAYCtx): void {
       levelQueue: 0,
       activeMenu: null,
     };
+
+    for (let i = 0; i < pendingStartLevels; i += 1) {
+      player.stats.level += 1;
+      player.stats.maxHp += 5;
+      player.stats.hp = player.stats.maxHp;
+      state.levelQueue += 1;
+      quests.onLevel(player.stats.level);
+    }
 
     const pauseButton = mountPauseButton(k, {
       onToggle: () => togglePause(),
@@ -380,7 +388,7 @@ function playSfx(k: KAPLAYCtx, key: string): void {
   }
 }
 
-function applyMetaBonuses(player: Player): void {
+function applyMetaBonuses(player: Player): number {
   const b = currentMetaBonuses();
   player.stats.maxHp += b.maxHpBonus;
   player.stats.hp = player.stats.maxHp;
@@ -390,5 +398,5 @@ function applyMetaBonuses(player: Player): void {
   player.stats.cooldownMult *= b.cooldownMult;
   player.stats.magnetMult *= b.magnetMult;
   player.stats.xpMult *= b.xpMult;
-  player.stats.level += b.startingLevel;
+  return b.startingLevel;
 }
