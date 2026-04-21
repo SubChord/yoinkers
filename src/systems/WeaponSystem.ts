@@ -29,7 +29,7 @@ interface WeaponState {
 
 import type { SuperBoss } from "../entities/SuperBoss";
 
-const BOSS_AREA = 56;
+const BOSS_AREA = 280;
 
 export class WeaponSystem {
   public projectiles: Projectile[] = [];

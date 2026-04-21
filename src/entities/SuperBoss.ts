@@ -5,10 +5,10 @@ import { GAME_HEIGHT, GAME_WIDTH, PLAYER_IFRAME_MS } from "../config/GameConfig"
 
 /* ── Constants ───────────────────────────────────────────────── */
 
-const BOSS_HP = 6000;
-const BOSS_DAMAGE = 35;
-const BOSS_VISUAL_SCALE = 5;
-const BOSS_AREA = 56;
+const BOSS_HP = 50_000;
+const BOSS_DAMAGE = 50;
+const BOSS_VISUAL_SCALE = 25;
+const BOSS_AREA = 280;
 
 // Hop timing
 const IDLE_DURATION = 1.2; // seconds between hops
@@ -21,12 +21,12 @@ const LAVA_LIFETIME_MS = 12_000;
 const LAVA_DAMAGE = 12;
 const LAVA_SLOW_MULT = 0.4;
 const LAVA_SLOW_DURATION_MS = 800;
-const LAVA_RADIUS = 44;
+const LAVA_RADIUS = 80;
 const LAVA_HIT_COOLDOWN_MS = 400;
 
 // Landing impact
-const LAND_IMPACT_RADIUS = 100;
-const LAND_IMPACT_DAMAGE = 50;
+const LAND_IMPACT_RADIUS = 300;
+const LAND_IMPACT_DAMAGE = 70;
 
 // Enrage threshold
 const ENRAGE_HP_RATIO = 0.35;
@@ -250,7 +250,7 @@ export function updateSuperBoss(
         const lerpX = boss.jumpStartX + (boss.targetX - boss.jumpStartX) * p;
         const lerpY = boss.jumpStartY + (boss.targetY - boss.jumpStartY) * p;
         // Parabolic height
-        const height = Math.sin(p * Math.PI) * 180;
+        const height = Math.sin(p * Math.PI) * 400;
         boss.obj.pos.x = lerpX;
         boss.obj.pos.y = lerpY - height;
         boss.shadow.pos.x = lerpX;
