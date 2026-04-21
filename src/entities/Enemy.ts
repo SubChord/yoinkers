@@ -1,4 +1,5 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
+import { ENEMY_DAMAGE_SCALE_RATIO } from "../config/GameConfig";
 import { ENEMY_DEFS, type EnemyDef, type EnemyId } from "../config/EnemyDefs";
 import type { Player } from "./Player";
 
@@ -62,12 +63,13 @@ export function spawnEnemy(
   const obj = k.add(comps);
 
   const hp = Math.floor(def.hp * waveScale * eliteHp);
+  const damageWaveScale = 1 + (waveScale - 1) * ENEMY_DAMAGE_SCALE_RATIO;
   const enemy: Enemy = {
     obj,
     hp,
     maxHp: hp,
     speed: def.speed * waveScale * eliteSpeed,
-    damage: Math.floor(def.damage * eliteDmg),
+    damage: Math.floor(def.damage * eliteDmg * damageWaveScale),
     xpValue: Math.floor(def.xpValue * (opts.elite ? 1.8 : 1)),
     area: def.area,
     typeId: def.id,

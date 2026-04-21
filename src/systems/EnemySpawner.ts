@@ -4,7 +4,7 @@ import {
   ENEMY_WAVE_GROWTH,
   SPAWN_MAX_RADIUS,
   SPAWN_MIN_RADIUS,
-  WAVE_SCALING_FACTOR,
+  waveScaleFactor,
 } from "../config/GameConfig";
 import {
   availableEnemiesForWave,
@@ -16,7 +16,7 @@ import { spawnEnemy, type Enemy, type EnemyEvent, updateEnemy } from "../entitie
 import type { Player } from "../entities/Player";
 
 const STREAM_INTERVAL_MS = 2200;
-const STREAM_INTERVAL_FLOOR_MS = 700;
+const STREAM_INTERVAL_FLOOR_MS = 500;
 const MAX_LEAPERS = 4;
 
 export class EnemySpawner {
@@ -31,11 +31,11 @@ export class EnemySpawner {
     this.wave = waveIndex;
     const count = ENEMY_WAVE_BASE_COUNT + waveIndex * ENEMY_WAVE_GROWTH;
     const pool = availableEnemiesForWave(waveIndex);
-    const waveScale = 1 + waveIndex * WAVE_SCALING_FACTOR;
+    const waveScale = waveScaleFactor(waveIndex);
 
     for (let i = 0; i < count; i += 1) {
       const id = pool[Math.floor(this.k.rand(0, pool.length))] ?? "slime";
-      const elite = waveIndex >= 7 && this.k.rand(0, 1) < Math.min(0.4, 0.05 + waveIndex * 0.02);
+      const elite = waveIndex >= 7 && this.k.rand(0, 1) < Math.min(0.55, 0.05 + waveIndex * 0.025);
       this.spawnAtRing(id, { elite, waveScale });
     }
 
@@ -67,11 +67,15 @@ export class EnemySpawner {
 
   private streamEnemies(): void {
     const pool = availableEnemiesForWave(this.wave);
-    const count = 2 + Math.floor(this.wave / 3);
-    const waveScale = 1 + this.wave * WAVE_SCALING_FACTOR;
+    const lateExtra = this.wave > 20 ? Math.floor((this.wave - 20) / 3) : 0;
+    const count = 2 + Math.floor(this.wave / 3) + lateExtra;
+    const waveScale = waveScaleFactor(this.wave);
     for (let i = 0; i < count; i += 1) {
       const id = pool[Math.floor(this.k.rand(0, pool.length))] ?? "slime";
-      const elite = this.wave >= 10 && this.k.rand(0, 1) < 0.08;
+      const eliteChance = this.wave >= 10
+        ? Math.min(0.45, 0.08 + (this.wave - 10) * 0.015)
+        : 0;
+      const elite = this.k.rand(0, 1) < eliteChance;
       this.spawnAtRing(id, { elite, waveScale });
     }
   }

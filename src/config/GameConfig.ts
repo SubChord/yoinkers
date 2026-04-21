@@ -30,4 +30,17 @@ export const ENEMY_WAVE_BASE_COUNT = 5;
 export const ENEMY_WAVE_GROWTH = 3;
 export const WAVE_SCALING_FACTOR = 0.1;
 
+// Late-game acceleration: after this wave, scaling ramps up faster
+export const LATE_GAME_WAVE = 20;
+export const LATE_GAME_EXTRA_SCALING = 0.15;
+// Enemy damage scales with waves but at a gentler ratio than HP
+export const ENEMY_DAMAGE_SCALE_RATIO = 0.4;
+
+/** Combined wave-scale multiplier — linear early, accelerating late. */
+export function waveScaleFactor(wave: number): number {
+  const base = 1 + wave * WAVE_SCALING_FACTOR;
+  if (wave <= LATE_GAME_WAVE) return base;
+  return base + (wave - LATE_GAME_WAVE) * LATE_GAME_EXTRA_SCALING;
+}
+
 export const SCORE_WAVE_MULTIPLIER = 10;
