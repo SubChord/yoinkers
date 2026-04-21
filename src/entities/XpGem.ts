@@ -1,5 +1,5 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
-import { BASE_GEM_MAGNET_RANGE, BASE_PICKUP_RANGE } from "../config/GameConfig";
+import { BASE_GEM_MAGNET_RANGE, BASE_PICKUP_RANGE, PLAYER_BASE_SPEED } from "../config/GameConfig";
 import type { Player } from "./Player";
 
 export type GemTier = "small" | "medium" | "large" | "huge";
@@ -60,8 +60,11 @@ export function updateGem(
   if (dist < magnetRange) {
     const nx = dx / (dist || 1);
     const ny = dy / (dist || 1);
-    gem.obj.pos.x += nx * 260 * dt;
-    gem.obj.pos.y += ny * 260 * dt;
+    const playerSpeed = player.stats.speed * player.stats.speedBuffMult;
+    const closeness = 1 - dist / magnetRange;
+    const flySpeed = Math.max(600, playerSpeed * 3) * (0.4 + 0.6 * closeness);
+    gem.obj.pos.x += nx * flySpeed * dt;
+    gem.obj.pos.y += ny * flySpeed * dt;
   }
 
   if (dist < BASE_PICKUP_RANGE) {
