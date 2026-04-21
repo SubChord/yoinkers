@@ -4,6 +4,7 @@ import type { Chest } from "../entities/Chest";
 import type { Enemy } from "../entities/Enemy";
 import type { Item } from "../entities/Item";
 import type { Player } from "../entities/Player";
+import type { WallSnapshot } from "../systems/WallHazard";
 
 const SIZE = 140;
 const MARGIN = 20;
@@ -13,6 +14,7 @@ export interface MinimapContext {
   enemies: Enemy[];
   items: Item[];
   chests: Chest[];
+  wall?: WallSnapshot | null;
 }
 
 export interface Minimap {
@@ -91,8 +93,33 @@ export function mountMinimap(k: KAPLAYCtx): Minimap {
     }
   };
 
+  // Wall hazard segments on minimap (reuse up to 2)
+  const wallDots: GameObj[] = [];
+  for (let i = 0; i < 2; i++) {
+    wallDots.push(k.add([
+      k.rect(1, 1),
+      k.pos(0, 0),
+      k.color(255, 120, 20),
+      k.opacity(0),
+      k.fixed(),
+      k.z(101),
+    ]));
+  }
+  // Gap marker on minimap
+  const gapDot = k.add([
+    k.rect(1, 1),
+    k.pos(0, 0),
+    k.color(50, 255, 50),
+    k.opacity(0),
+    k.fixed(),
+    k.z(101),
+  ]);
+
+  const toMinimap = (worldVal: number): number =>
+    ((worldVal + WORLD_SIZE / 2) / WORLD_SIZE) * SIZE;
+
   return {
-    update: ({ player, enemies, items, chests }) => {
+    update: ({ player, enemies, items, chests, wall }) => {
       const playerProj = project(player.obj.pos.x, player.obj.pos.y);
       playerDot.pos.x = playerProj.x - 3;
       playerDot.pos.y = playerProj.y - 3;
@@ -115,6 +142,63 @@ export function mountMinimap(k: KAPLAYCtx): Minimap {
         [246, 200, 90],
         3,
       );
+
+      // Draw wall hazard on minimap
+      if (wall) {
+        const horiz = wall.direction === "right" || wall.direction === "left";
+        const posM = toMinimap(wall.position);
+        const gsM = toMinimap(wall.gapStart);
+        const geM = toMinimap(wall.gapEnd);
+        const thick = Math.max(2, Math.round((48 / WORLD_SIZE) * SIZE * 1.5));
+        const flash = wall.phase === "telegraph" ? (Math.sin(Date.now() * 0.012) > 0 ? 0.9 : 0.3) : 0.9;
+
+        if (horiz) {
+          // Top segment
+          const topH = gsM;
+          wallDots[0].pos.x = originX + posM - thick / 2;
+          wallDots[0].pos.y = originY;
+          (wallDots[0] as any).width = thick;
+          (wallDots[0] as any).height = Math.max(0, topH);
+          (wallDots[0] as any).opacity = topH > 0 ? flash : 0;
+          // Bottom segment
+          const botH = SIZE - geM;
+          wallDots[1].pos.x = originX + posM - thick / 2;
+          wallDots[1].pos.y = originY + geM;
+          (wallDots[1] as any).width = thick;
+          (wallDots[1] as any).height = Math.max(0, botH);
+          (wallDots[1] as any).opacity = botH > 0 ? flash : 0;
+          // Gap
+          gapDot.pos.x = originX + posM - thick / 2;
+          gapDot.pos.y = originY + gsM;
+          (gapDot as any).width = thick;
+          (gapDot as any).height = Math.max(0, geM - gsM);
+          (gapDot as any).opacity = flash;
+        } else {
+          // Left segment
+          const leftW = gsM;
+          wallDots[0].pos.x = originX;
+          wallDots[0].pos.y = originY + posM - thick / 2;
+          (wallDots[0] as any).width = Math.max(0, leftW);
+          (wallDots[0] as any).height = thick;
+          (wallDots[0] as any).opacity = leftW > 0 ? flash : 0;
+          // Right segment
+          const rightW = SIZE - geM;
+          wallDots[1].pos.x = originX + geM;
+          wallDots[1].pos.y = originY + posM - thick / 2;
+          (wallDots[1] as any).width = Math.max(0, rightW);
+          (wallDots[1] as any).height = thick;
+          (wallDots[1] as any).opacity = rightW > 0 ? flash : 0;
+          // Gap
+          gapDot.pos.x = originX + gsM;
+          gapDot.pos.y = originY + posM - thick / 2;
+          (gapDot as any).width = Math.max(0, geM - gsM);
+          (gapDot as any).height = thick;
+          (gapDot as any).opacity = flash;
+        }
+      } else {
+        for (const wd of wallDots) (wd as any).opacity = 0;
+        (gapDot as any).opacity = 0;
+      }
     },
   };
 }

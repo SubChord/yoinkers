@@ -1,5 +1,5 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
-import { WORLD_SIZE } from "../config/GameConfig";
+import { GAME_WIDTH, WORLD_SIZE } from "../config/GameConfig";
 import type { Player } from "../entities/Player";
 
 const WALL_THICKNESS = 48;
@@ -13,10 +13,24 @@ const TELEGRAPH_DURATION_MS = 2500;
 const FIRST_WALL_WAVE = 6;
 const WALL_INTERVAL_MS = 25_000;
 
+// Lava palette
+const LAVA_CORE: [number, number, number] = [220, 60, 10];
+const LAVA_BRIGHT: [number, number, number] = [255, 160, 30];
+const LAVA_OUTLINE: [number, number, number] = [255, 200, 60];
+
 type SweepDir = "right" | "down" | "left" | "up";
+
+export interface WallSnapshot {
+  direction: SweepDir;
+  position: number;
+  gapStart: number;
+  gapEnd: number;
+  phase: "telegraph" | "active";
+}
 
 interface ActiveWall {
   segments: GameObj[];
+  glowSegments: GameObj[];
   direction: SweepDir;
   position: number;
   speed: number;
@@ -47,14 +61,29 @@ export class WallHazardSystem {
     private damageFlash: { flash: () => void },
   ) {
     this.warning = k.add([
-      k.text("", { size: 28 }),
-      k.pos(k.width() / 2, k.height() - 56),
-      k.anchor("center"),
+      k.text("", { size: 22 }),
+      k.pos(GAME_WIDTH - 20, 52),
+      k.anchor("topright"),
       k.fixed(),
-      k.color(255, 80, 80),
+      k.color(255, 160, 40),
       k.opacity(0),
       k.z(101),
     ]);
+  }
+
+  /** Snapshot for minimap rendering (null when inactive). */
+  public snapshot(): WallSnapshot | null {
+    if (this.telegraph) {
+      const t = this.telegraph;
+      const half = WORLD_SIZE / 2;
+      const pos = (t.direction === "right" || t.direction === "down") ? -half : half;
+      return { direction: t.direction, position: pos, gapStart: t.gapStart, gapEnd: t.gapEnd, phase: "telegraph" };
+    }
+    if (this.wall) {
+      const w = this.wall;
+      return { direction: w.direction, position: w.position, gapStart: w.gapStart, gapEnd: w.gapEnd, phase: "active" };
+    }
+    return null;
   }
 
   public update(nowMs: number, dt: number, wave: number): void {
@@ -98,23 +127,23 @@ export class WallHazardSystem {
 
     const speed = BASE_WALL_SPEED + (wave - FIRST_WALL_WAVE) * WALL_SPEED_PER_WAVE;
 
-    // Flashing edge markers
+    // Flashing lava edge markers
     const objs: GameObj[] = [];
     const edgePos = (dir === "right" || dir === "down") ? -half : half;
 
     if (horiz) {
       if (gapStart + half > 0) {
         objs.push(this.k.add([
-          this.k.rect(6, gapStart + half),
-          this.k.pos(edgePos - 3, -half),
-          this.k.color(255, 50, 50), this.k.opacity(0.7), this.k.z(8),
+          this.k.rect(8, gapStart + half),
+          this.k.pos(edgePos - 4, -half),
+          this.k.color(...LAVA_BRIGHT), this.k.opacity(0.7), this.k.z(8),
         ]));
       }
       if (half - gapEnd > 0) {
         objs.push(this.k.add([
-          this.k.rect(6, half - gapEnd),
-          this.k.pos(edgePos - 3, gapEnd),
-          this.k.color(255, 50, 50), this.k.opacity(0.7), this.k.z(8),
+          this.k.rect(8, half - gapEnd),
+          this.k.pos(edgePos - 4, gapEnd),
+          this.k.color(...LAVA_BRIGHT), this.k.opacity(0.7), this.k.z(8),
         ]));
       }
       objs.push(this.k.add([
@@ -125,16 +154,16 @@ export class WallHazardSystem {
     } else {
       if (gapStart + half > 0) {
         objs.push(this.k.add([
-          this.k.rect(gapStart + half, 6),
-          this.k.pos(-half, edgePos - 3),
-          this.k.color(255, 50, 50), this.k.opacity(0.7), this.k.z(8),
+          this.k.rect(gapStart + half, 8),
+          this.k.pos(-half, edgePos - 4),
+          this.k.color(...LAVA_BRIGHT), this.k.opacity(0.7), this.k.z(8),
         ]));
       }
       if (half - gapEnd > 0) {
         objs.push(this.k.add([
-          this.k.rect(half - gapEnd, 6),
-          this.k.pos(gapEnd, edgePos - 3),
-          this.k.color(255, 50, 50), this.k.opacity(0.7), this.k.z(8),
+          this.k.rect(half - gapEnd, 8),
+          this.k.pos(gapEnd, edgePos - 4),
+          this.k.color(...LAVA_BRIGHT), this.k.opacity(0.7), this.k.z(8),
         ]));
       }
       objs.push(this.k.add([
@@ -145,10 +174,10 @@ export class WallHazardSystem {
     }
 
     const labels: Record<SweepDir, string> = {
-      right: "<<< WALL INCOMING",
-      left: "WALL INCOMING >>>",
-      down: "^^^ WALL INCOMING",
-      up: "WALL INCOMING vvv",
+      right: "LAVA <<<",
+      left: ">>> LAVA",
+      down: "LAVA ^^^",
+      up: "vvv LAVA",
     };
     (this.warning as any).text = labels[dir];
 
@@ -179,47 +208,45 @@ export class WallHazardSystem {
     const startPos = (direction === "right" || direction === "down") ? -half : half;
 
     const segments: GameObj[] = [];
+    const glowSegments: GameObj[] = [];
+    const GLOW_EXTRA = 12;
+
+    const addLavaSegment = (w: number, h: number, x: number, y: number) => {
+      // Outer glow layer
+      glowSegments.push(this.k.add([
+        this.k.rect(w + GLOW_EXTRA, h + GLOW_EXTRA),
+        this.k.pos(x - GLOW_EXTRA / 2, y - GLOW_EXTRA / 2),
+        this.k.color(...LAVA_BRIGHT), this.k.opacity(0.35), this.k.z(7),
+      ]));
+      // Core lava
+      segments.push(this.k.add([
+        this.k.rect(w, h),
+        this.k.pos(x, y),
+        this.k.color(...LAVA_CORE), this.k.opacity(0.95), this.k.z(8),
+        this.k.outline(3, this.k.rgb(...LAVA_OUTLINE)),
+      ]));
+    };
 
     if (horiz) {
       if (gapStart + half > 0) {
-        segments.push(this.k.add([
-          this.k.rect(WALL_THICKNESS, gapStart + half),
-          this.k.pos(startPos - WALL_THICKNESS / 2, -half),
-          this.k.color(180, 30, 30), this.k.opacity(0.9), this.k.z(8),
-          this.k.outline(3, this.k.rgb(255, 80, 80)),
-        ]));
+        addLavaSegment(WALL_THICKNESS, gapStart + half, startPos - WALL_THICKNESS / 2, -half);
       }
       if (half - gapEnd > 0) {
-        segments.push(this.k.add([
-          this.k.rect(WALL_THICKNESS, half - gapEnd),
-          this.k.pos(startPos - WALL_THICKNESS / 2, gapEnd),
-          this.k.color(180, 30, 30), this.k.opacity(0.9), this.k.z(8),
-          this.k.outline(3, this.k.rgb(255, 80, 80)),
-        ]));
+        addLavaSegment(WALL_THICKNESS, half - gapEnd, startPos - WALL_THICKNESS / 2, gapEnd);
       }
     } else {
       if (gapStart + half > 0) {
-        segments.push(this.k.add([
-          this.k.rect(gapStart + half, WALL_THICKNESS),
-          this.k.pos(-half, startPos - WALL_THICKNESS / 2),
-          this.k.color(180, 30, 30), this.k.opacity(0.9), this.k.z(8),
-          this.k.outline(3, this.k.rgb(255, 80, 80)),
-        ]));
+        addLavaSegment(gapStart + half, WALL_THICKNESS, -half, startPos - WALL_THICKNESS / 2);
       }
       if (half - gapEnd > 0) {
-        segments.push(this.k.add([
-          this.k.rect(half - gapEnd, WALL_THICKNESS),
-          this.k.pos(gapEnd, startPos - WALL_THICKNESS / 2),
-          this.k.color(180, 30, 30), this.k.opacity(0.9), this.k.z(8),
-          this.k.outline(3, this.k.rgb(255, 80, 80)),
-        ]));
+        addLavaSegment(half - gapEnd, WALL_THICKNESS, gapEnd, startPos - WALL_THICKNESS / 2);
       }
     }
 
     this.playSfx("sfx-hit");
     this.k.shake(6);
 
-    this.wall = { segments, direction, position: startPos, speed, gapStart, gapEnd };
+    this.wall = { segments, glowSegments, direction, position: startPos, speed, gapStart, gapEnd };
   }
 
   private tickWall(dt: number, nowMs: number): void {
@@ -227,12 +254,28 @@ export class WallHazardSystem {
     const half = WORLD_SIZE / 2;
     const horiz = w.direction === "right" || w.direction === "left";
     const sign = (w.direction === "right" || w.direction === "down") ? 1 : -1;
+    const GLOW_EXTRA = 12;
 
     w.position += sign * w.speed * dt;
 
     for (const seg of w.segments) {
       if (horiz) seg.pos.x = w.position - WALL_THICKNESS / 2;
       else seg.pos.y = w.position - WALL_THICKNESS / 2;
+    }
+    for (const glow of w.glowSegments) {
+      if (horiz) glow.pos.x = w.position - WALL_THICKNESS / 2 - GLOW_EXTRA / 2;
+      else glow.pos.y = w.position - WALL_THICKNESS / 2 - GLOW_EXTRA / 2;
+    }
+
+    // Animate lava glow pulse
+    const pulse = 0.25 + Math.sin(nowMs * 0.006) * 0.15;
+    for (const glow of w.glowSegments) (glow as any).opacity = pulse;
+    // Animate core color flicker between LAVA_CORE and brighter
+    const flicker = Math.sin(nowMs * 0.008);
+    const r = LAVA_CORE[0] + Math.floor(flicker * 35);
+    const g = LAVA_CORE[1] + Math.floor(flicker * 30);
+    for (const seg of w.segments) {
+      try { (seg as any).color = { r, g, b: LAVA_CORE[2] }; } catch { /* skip */ }
     }
 
     // Off-world → clean up
@@ -241,6 +284,7 @@ export class WallHazardSystem {
       (sign < 0 && w.position < -half - WALL_THICKNESS)
     ) {
       for (const seg of w.segments) seg.destroy();
+      for (const glow of w.glowSegments) glow.destroy();
       this.wall = null;
       (this.warning as any).opacity = 0;
       return;

@@ -570,6 +570,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
         enemies: spawner.enemies,
         items: items.items,
         chests: chests.chests,
+        wall: wallHazard.snapshot(),
       });
 
       if (mobileControls) {
