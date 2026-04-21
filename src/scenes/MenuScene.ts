@@ -46,7 +46,7 @@ export function registerMenuScene(k: KAPLAYCtx): void {
     ]);
 
     k.add([
-      k.text("Press Esc or P to pause and switch music", { size: 20 }),
+      k.text("Switch music any time from the bottom-right selector", { size: 20 }),
       k.color(188, 232, 196),
       k.anchor("center"),
       k.pos(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 90),

@@ -15,7 +15,7 @@ import { MusicSystem } from "../systems/MusicSystem";
 import { WeaponSystem } from "../systems/WeaponSystem";
 import { applyUpgrade, pickUpgradeChoices } from "../systems/UpgradeSystem";
 import { createHud, updateHud } from "../ui/HUD";
-import { showPauseMenu, type PauseMenu } from "../ui/PauseMenu";
+import { mountMusicSelector } from "../ui/MusicSelector";
 import { showUpgradeMenu, type UpgradeMenu } from "../ui/UpgradeMenu";
 
 export function registerGameScene(k: KAPLAYCtx): void {
@@ -44,6 +44,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     const hud = createHud(k);
     const music = new MusicSystem(k);
     music.start();
+    mountMusicSelector(k, music);
 
     interface GameState {
       startMs: number;
@@ -51,9 +52,6 @@ export function registerGameScene(k: KAPLAYCtx): void {
       wave: number;
       enemiesKilled: number;
       paused: boolean;
-      pauseMenuOpen: boolean;
-      pauseMenu: PauseMenu | null;
-      pausedAtMs: number | undefined;
       levelQueue: number;
       activeMenu: UpgradeMenu | null;
     }
@@ -64,65 +62,11 @@ export function registerGameScene(k: KAPLAYCtx): void {
       wave: 1,
       enemiesKilled: 0,
       paused: false,
-      pauseMenuOpen: false,
-      pauseMenu: null,
-      pausedAtMs: undefined,
       levelQueue: 0,
       activeMenu: null,
     };
 
     spawner.spawnWave(state.wave);
-
-    const openPauseMenu = () => {
-      if (state.paused) return;
-      state.paused = true;
-      state.pauseMenuOpen = true;
-      music.pause();
-      state.pauseMenu = showPauseMenu(k, {
-        tracks: music.getTracks(),
-        currentTrackId: music.getCurrentTrackId(),
-        onResume: () => closePauseMenu(),
-        onQuit: () => {
-          state.pauseMenu?.destroy();
-          state.pauseMenu = null;
-          music.stop();
-          k.go("menu");
-        },
-        onSelectTrack: (trackId) => music.selectTrack(trackId),
-      });
-    };
-
-    const closePauseMenu = () => {
-      const pausedAt = state.pausedAtMs;
-      state.pauseMenu?.destroy();
-      state.pauseMenu = null;
-      state.pauseMenuOpen = false;
-      state.paused = false;
-      if (pausedAt !== undefined) {
-        const drift = Date.now() - pausedAt;
-        state.startMs += drift;
-        state.waveStartedMs += drift;
-        state.pausedAtMs = undefined;
-      }
-      music.resume();
-    };
-
-    k.onKeyPress("escape", () => {
-      if (state.pauseMenuOpen) {
-        closePauseMenu();
-      } else if (!state.paused) {
-        state.pausedAtMs = Date.now();
-        openPauseMenu();
-      }
-    });
-    k.onKeyPress("p", () => {
-      if (state.pauseMenuOpen) {
-        closePauseMenu();
-      } else if (!state.paused) {
-        state.pausedAtMs = Date.now();
-        openPauseMenu();
-      }
-    });
 
     const openUpgradeMenuIfQueued = () => {
       if (state.paused || state.levelQueue <= 0) return;
