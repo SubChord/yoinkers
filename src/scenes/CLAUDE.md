@@ -8,24 +8,25 @@ Each file exports `register{Name}Scene(k)` which calls `k.scene(name, handler)`.
 
 ## SCENE TABLE
 
-| scene name | file                | args               | k.go transitions                              |
-|------------|---------------------|--------------------|------------------------------------------------|
-| `menu`     | MenuScene.ts        | —                  | `game {mapId}`, `maps`, `shop`, `stats`, `guide` |
-| `game`     | GameScene.ts        | `{mapId?: MapId}`  | `end {EndStats}` (only — via `endGame`)       |
-| `end`      | EndScene.ts         | `EndStats`         | `menu`, `shop`                                 |
-| `maps`     | MapSelectScene.ts   | —                  | `menu`, `game {mapId}`                         |
-| `shop`     | ShopScene.ts        | —                  | `menu`, `shop` (self, after buy/respec)        |
-| `stats`    | StatsScene.ts       | —                  | `menu`, `stats` (self, after reset)            |
-| `guide`    | GuideScene.ts       | —                  | `menu`                                         |
+| scene name    | file                | args               | k.go transitions                                           |
+|---------------|---------------------|--------------------|-------------------------------------------------------------|
+| `menu`        | MenuScene.ts        | —                  | `game {mapId}`, `maps`, `characters`, `shop`, `stats`, `guide` |
+| `game`        | GameScene.ts        | `{mapId?: MapId}`  | `end {EndStats}` (only — via `endGame`)                     |
+| `end`         | EndScene.ts         | `EndStats`         | `menu`, `shop`                                              |
+| `maps`        | MapSelectScene.ts   | —                  | `menu`, `game {mapId}`                                      |
+| `characters`  | CharactersScene.ts  | —                  | `menu`, `characters` (self, after character unlock/select OR Poophood purchase/toggle) |
+| `shop`        | ShopScene.ts        | —                  | `menu`, `shop` (self, after buy/respec)                     |
+| `stats`       | StatsScene.ts       | —                  | `menu`, `stats` (self, after reset)                         |
+| `guide`       | GuideScene.ts       | —                  | `menu`                                                      |
 
 ## GAMESCENE LAYOUT
 
 - Imports ~10 systems (`EnemySpawner`, `WeaponSystem`, `ChestSystem`, `ItemSystem`, `GearSystem`, `QuestSystem`, `StatsTracker`, `MusicSystem`, `SaveStore`, `UpgradeSystem`) + UI (`HUD`, `Minimap`, `MobileControls`, `MusicSelector`, `PauseButton`, `DamageOverlay`, `UpgradeMenu`, `EvolutionPopup`).
 - `GameState` (lines 96-106): `startMs, waveStartedMs, wave, enemiesKilled, paused, pauseButtonPaused, pausedAtMs, levelQueue, activeMenu`.
-- Update order (lines 228-414): early-out on `paused` → time-up check → wave advance → `updatePlayer` → active-item branch → `spawner/weapons/chests/items/gear.update` → `handleEnemyTouchPlayer` → `collectGems` → `maybeLevelUp` → `checkEvolutions` → HUD/minimap/mobile refresh → hp-death check → drain `levelQueue`.
+- Update order (lines 228-414): early-out on `paused` → time-up check → wave advance → `updatePlayer` → active-item branch → `spawner.update` → leaper-explosion loop (drains `spawner.explodingLeapers`, AoE 110px @ `leaper.damage` respecting iframes, destroys the obj) → `weapons/chests/items/gear.update` → `handleEnemyTouchPlayer` → `collectGems` → `maybeLevelUp` → `checkEvolutions` → HUD/minimap/mobile refresh → hp-death check → drain `levelQueue`.
 - Collision wiring: player↔enemy via `handleEnemyTouchPlayer` (AABB-ish squared distance, `PLAYER_IFRAME_MS` gate, lines 428-450). Enemy deaths flow through `WeaponSystem`'s kill callback (lines 66-80) which spawns xp gem, fans out to items/gear/quests, then `spawner.removeAt(index)`.
 - `WEAPON_EVOLUTIONS` table lives at lines 542-599 — 7 entries, each `{from: WeaponId, gear: GearId, to: WeaponId, title, subtitle, spriteKey}`. Drives `checkEvolutions` (lines 171-200).
-- Active item activation (lines 253-376): `k.isKeyDown("space") || consumeMobileAction()` + cooldown gate → `switch(player.stats.activeItem)` → `redBull` (speed buff + yellow burst VFX) or `novaBlast` (3 expanding rings, screen flash, `k.shake(8)`, radial damage loop over `spawner.enemies`).
+- Active item activation (lines 253-391): `k.isKeyPressed("space") || consumeMobileAction()` → `switch(player.stats.activeItem)` → `redBull` (speed buff + yellow burst VFX) or `novaBlast` (3 expanding rings, screen flash, `k.shake(8)`, radial damage loop over `spawner.enemies`). Both branches `player.stats.activeItem = null` — **one-time use, no cooldown**.
 - Mobile controls mount conditionally at line 94: `isTouchDevice() ? mountMobileControls(k) : null`. `mobileControls.showActionButton(...)` toggled each frame based on `activeItem !== null`.
 - Win (time-up) and loss (hp≤0) both funnel through `endGame` (lines 500-523): `music.stop()` → build `stats` object → `persistRun(stats, mapId)` → `k.go("end", stats)`.
 
@@ -43,4 +44,4 @@ Each file exports `register{Name}Scene(k)` which calls `k.scene(name, handler)`.
 - **`mapId` wiring**: MenuScene passes `save.lastMapId` (line 53). MapSelectScene writes `setLastMap(def.id)` before `k.go("game", {mapId})` (lines 148-153). GameScene defaults to `"grove"` if arg missing (line 43).
 - **Upgrade menu**: level-ups bump `state.levelQueue`; `openUpgradeMenuIfQueued` drains one at a time, chaining the next via `onChoose` callback (lines 205-226).
 - **Evolutions**: `announced: Set<WeaponId>` ensures each evolution fires exactly once per run (line 170, 173, 180).
-- **Self-reentry**: `ShopScene` re-enters `shop` after buy/respec; `StatsScene` re-enters `stats` after reset — cheap full redraw pattern.
+- **Self-reentry**: `ShopScene` re-enters `shop` after buy/respec; `StatsScene` re-enters `stats` after reset; `CharactersScene` re-enters `characters` after unlock/select — cheap full redraw pattern. `loadSave()` is re-read on every entry so the redraw reflects the new state.

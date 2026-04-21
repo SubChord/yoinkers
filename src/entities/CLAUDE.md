@@ -5,7 +5,7 @@ Factory functions that build KAPLAY GameObjs and return `{ obj, ...state }` wrap
 
 ## FILE MAP
 - Player.ts — `createPlayer(k, characterId?)` / `updatePlayer`; sprite z=10, scale 2; 4-dir walk via frame offset (FACING_ROW, WALK_FPS=8, 4 frames). Sprite key and starting weapon are resolved from `CHARACTER_SPRITES` / `CHARACTER_STARTING_WEAPONS` tables (ninja → `player-walk` + `shuriken`; jesus → `jesus-walk` + `holyBeam`).
-- Enemy.ts — `spawnEnemy` z=5 (boss z=6); `updateEnemy` chases player, flips via `flipX`, swaps `walk-up`/`walk-down` anims; `playDeathAnim` shrink+spin+fade over 0.3s then destroys; `destroyEnemy` plain destroy for non-kill cleanup.
+- Enemy.ts — `spawnEnemy(k, id, x, y, opts)` z=5 (boss z=6); `opts.waveScale` scales HP, speed, and damage (damage via `ENEMY_DAMAGE_SCALE_RATIO`); `opts.elite` adds HP×2.2 / dmg×1.4 / spd×1.1 / xp×1.8 + red tint. `updateEnemy` returns `EnemyEvent` = `"none" | "explode"` — chase + flip for normal enemies; leapers run a 3-phase state machine (`approach → telegraph 0.6s → lunge @600px/s`) and return `"explode"` when they reach target or time out (0.8s). `playDeathAnim` shrink+spin+fade over 0.3s then destroys; `destroyEnemy` plain destroy for non-kill cleanup.
 - Projectile.ts — `spawnProjectile` only; z=7 (ground=2); rotation only for linear/pierce/boomerang; orbit sprites try `play("spin")` in try/catch (katana orbit lacks the anim).
 - XpGem.ts — `spawnXpGem` z=3; `updateGem` returns `"idle" | "collected"`; tier picked by xp value (small/medium/large/huge).
 - Gear.ts — `spawnGear` creates TWO objs: glow `circle(18)` z=3 + sprite z=4. Both positions synced each frame. Pickup destroys both.
@@ -28,5 +28,5 @@ Factory functions that build KAPLAY GameObjs and return `{ obj, ...state }` wrap
 - Enemies are not pooled; each `spawnEnemy` is a fresh `k.add`. Respect that when tuning spawn counts.
 - Gear destroy must remove BOTH `drop.obj` and `drop.glow`. Destroying only the sprite leaves an orphan glow circle.
 - Scenery is fire-and-forget — never add `onUpdate` there; 2300 primitives × per-frame logic will tank the frame.
-- `playDeathAnim` is the only correct kill path for weapons, nuke, and nova blast (it self-destructs after the 0.3s tween). Bare `enemy.obj.destroy()` is reserved for spawner cleanup of stale/out-of-range refs.
+- `playDeathAnim` is the only correct kill path for weapons, nuke, and nova blast (it self-destructs after the 0.3s tween). Bare `enemy.obj.destroy()` is reserved for spawner cleanup of stale/out-of-range refs AND for leaper self-detonation (GameScene calls `leaper.obj.destroy()` directly before running AoE damage — no xp gem, no kill counter).
 - Player facing is sticky on exact diagonals — intentional. Don't "fix" it.

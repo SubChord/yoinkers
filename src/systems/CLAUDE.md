@@ -5,7 +5,7 @@ Mutable per-scene classes (one instance per run, owned by GameScene) plus a few 
 
 ## FILE MAP
 - `WeaponSystem.ts` — class. Owns projectiles, fires weapons, resolves hits.
-- `EnemySpawner.ts` — class. Wave spawns + streaming; exposes `enemies[]`, `nearest()`, `removeAt()`.
+- `EnemySpawner.ts` — class. Wave spawns + streaming; exposes `enemies[]`, `explodingLeapers[]`, `nearest()`, `removeAt()`. Streams every `max(500ms, 2200 - wave*60)`; adds extra spawns past wave 20. Elite rate ramps: wave-spawn up to 55%, stream up to 45% past wave 10. Caps concurrent leapers at `MAX_LEAPERS = 4`. Reads `waveScaleFactor(wave)` each spawn; passes as `opts.waveScale` into `spawnEnemy`.
 - `UpgradeSystem.ts` — module (stateless). `pickUpgradeChoices()`, `applyUpgrade()`.
 - `GearSystem.ts` — class. World + kill drops; applies gear stacks.
 - `ItemSystem.ts` — class. Consumables incl. `equip-active` (redBull / novaBlast).
@@ -47,10 +47,11 @@ Verified in `GameScene.ts` lines 228-414:
 
 ## SAVE SCHEMA
 - Key: `yoinkers.save.v2`. Bump the `.v2` suffix on any breaking change — there is no migration logic.
-- Fields: `runsPlayed / winCount / totalEnemiesKilled / totalDamage / totalTimeMs`, `bestWave / bestLevel / bestTimeMs / bestEnemies`, `yoinks + lifetimeYoinks + lastYoinksEarned + metaUpgrades`, `unlockedMaps / clearedMaps / lastMapId`, `lastRun`, `allTimeDamage`, `selectedCharacter` (`"ninja" | "jesus"`; sanitizer downgrades to `"ninja"` if jesus selected without the `unlock-jesus` meta upgrade).
-- Writes only happen in: `persistRun`, `purchaseMetaUpgrade`, `refundMetaUpgrades`, `setLastMap`, `setSelectedCharacter`, `resetSave`. No write-on-update. `setSelectedCharacter` no-ops if `isCharacterUnlocked(save, id)` is false.
+- Fields: `runsPlayed / winCount / totalEnemiesKilled / totalDamage / totalTimeMs`, `bestWave / bestLevel / bestTimeMs / bestEnemies`, `yoinks + lifetimeYoinks + lastYoinksEarned + metaUpgrades`, `unlockedMaps / clearedMaps / lastMapId`, `lastRun`, `allTimeDamage`, `unlockedCharacters: CharacterId[]` (always contains `"ninja"`; `"jesus"` added via purchase), `selectedCharacter` (`"ninja" | "jesus"`; sanitizer downgrades to `"ninja"` if not in `unlockedCharacters`), `poophoodUnlocked: boolean`, `wearingPoophood: boolean` (sanitized to `false` whenever `poophoodUnlocked` is false).
+- Writes only happen in: `persistRun`, `purchaseMetaUpgrade`, `refundMetaUpgrades`, `setLastMap`, `setSelectedCharacter`, `purchaseCharacterUnlock`, `purchasePoophood`, `togglePoophood`, `resetSave`. No write-on-update. `setSelectedCharacter` no-ops if `isCharacterUnlocked(save, id)` is false. `purchaseCharacterUnlock(id, cost)` no-ops if already unlocked OR `yoinks < cost`. `purchasePoophood` costs 50 yoinks and auto-sets `wearingPoophood = true` on first unlock.
 - Forward-compatible via `{ ...cloneEmpty(), ...parsed, ... }` spread in `loadSave`. New optional fields just work.
 - `activeItem` and `activeItemCooldownMs` live on `PlayerStats` and are runtime-only; NOT persisted.
+- Legacy migration: `sanitizeUnlockedCharacters` reads the old `metaUpgrades["unlock-jesus"]` flag and adds `"jesus"` to `unlockedCharacters` so pre-refactor saves keep Jesus unlocked. Do NOT remove this migration until the key `yoinkers.save.v2` is bumped.
 
 ## WeaponSystem GOTCHAS
 - `fireTrail` drops ground sprites only when the player has moved `FIRE_TRAIL_DROP_DIST = 28` pixels since the last drop (not a cooldown).
@@ -62,5 +63,5 @@ Verified in `GameScene.ts` lines 228-414:
 ## GENERAL GOTCHAS
 - Evolution logic lives in `GameScene.ts` (`checkEvolutions` closure, line 171), NOT in `GearSystem`.
 - Kills fan out via the `WeaponSystem` `onEnemyDeath` callback passed from GameScene (lines 66-76): spawn xp gem, `items.onEnemyKilled`, `gear.onEnemyKilled`, `quests.onKill`, boss SFX, `playDeathAnim`, `spawner.removeAt(index)`, increment kill counter. The `ItemSystem.nukeAll` path and the GameScene novaBlast path both replicate this (see line 362-370) and both use `playDeathAnim` instead of a plain `obj.destroy()`.
-- `ItemSystem` `equip-active` pickups (redBull, novaBlast) set `player.stats.activeItem` and reset `activeItemCooldownMs = 0`. They do NOT trigger the effect — consumption happens in GameScene on SPACE / mobile action (lines 253-376).
+- `ItemSystem` `equip-active` pickups (redBull, novaBlast) set `player.stats.activeItem`. They do NOT trigger the effect — consumption happens in GameScene on SPACE / mobile action, which clears the slot (`activeItem = null`). **One-time use**: there is no cooldown, picking up a second copy simply overwrites. `activeItemCooldownMs` on `PlayerStats` is legacy and never written now.
 - `ItemSystem` converts wasted heals to `WASTED_ITEM_XP = 40` XP (see `isWasted`).

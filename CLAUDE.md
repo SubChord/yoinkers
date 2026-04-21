@@ -1,11 +1,11 @@
 # YOINKERS KNOWLEDGE BASE
 
-**Generated:** 2026-04-21
-**Commit:** 3d14b1e
+**Generated:** 2026-04-22
+**Commit:** 8e05d12
 **Branch:** main
 
 ## OVERVIEW
-Vampire-Survivors-style roguelike. KAPLAY 3001 + Vite + TypeScript. Single package, ~6.8k LOC, canvas rendering, localStorage persistence. Two playable characters (Ninja + Jesus Christ); Jesus is a 500-yoinks meta unlock.
+Vampire-Survivors-style roguelike. KAPLAY 3001 + Vite + TypeScript. Single package, ~8.3k LOC, canvas rendering, localStorage persistence. Two playable characters (Ninja + Jesus Christ); Jesus costs 500 yoinks in the dedicated Characters scene (stored in `save.unlockedCharacters`, NOT a meta upgrade). Same scene also hosts the Poophood cosmetic (50 yoinks, toggle wear).
 
 ## STRUCTURE
 ```
@@ -16,7 +16,7 @@ Vampire-Survivors-style roguelike. KAPLAY 3001 + Vite + TypeScript. Single packa
 │   ├── config/              # Data defs: weapons (17), enemies, gear, items, upgrades, maps, music, quests, meta
 │   ├── entities/            # In-world factories (Player, Enemy + playDeathAnim, Projectile, Gear, Item, XpGem, Chest, Scenery)
 │   ├── systems/             # Per-scene engines + MobileInput (touch) + SaveStore (localStorage) + PickupVfx helpers
-│   ├── scenes/              # 7 KAPLAY scenes (menu, game, end, stats, guide, maps, shop)
+│   ├── scenes/              # 8 KAPLAY scenes (menu, game, end, stats, guide, maps, shop, characters)
 │   ├── ui/                  # Fixed-layer HUD + overlays + MobileControls (joystick + action button)
 │   └── types/GameTypes.ts   # Shared types (PlayerStats, EndStats, Facing, ActiveItemId)
 ├── public/assets/           # Runtime sprite + sound assets — paths as "assets/..." (no leading slash)
@@ -35,7 +35,7 @@ Vampire-Survivors-style roguelike. KAPLAY 3001 + Vite + TypeScript. Single packa
 | Add enemy | `src/config/EnemyDefs.ts` + sprite load in `src/main.ts` `ENEMY_SPRITES` |
 | Add upgrade | `src/config/UpgradeDefs.ts` (kinds: weapon-unlock / weapon-upgrade / boost). WeaponSystem reads `upgrades["<weapon>-damage\|cooldown\|count"]` verbatim. |
 | Meta / shop | `src/config/MetaUpgradeDefs.ts`, `src/scenes/ShopScene.ts` |
-| Character select | `src/scenes/MenuScene.ts` SWITCH button. Save via `setSelectedCharacter` / check via `isCharacterUnlocked` in `SaveStore.ts`. `createPlayer(k, characterId)` resolves sprite + starting weapon from tables at the top of `src/entities/Player.ts`. |
+| Character select / unlock | `src/scenes/CharactersScene.ts` (dedicated scene, reached from menu CHARACTERS btn or `c` key). `purchaseCharacterUnlock(id, cost)` + `setSelectedCharacter` + `isCharacterUnlocked` in `SaveStore.ts`. Defs in `src/config/CharacterDefs.ts` (`CHARACTER_DEFS`, `CHARACTER_ORDER`). `createPlayer(k, characterId)` resolves sprite + starting weapon from tables at the top of `src/entities/Player.ts`. |
 | Save schema | `src/systems/SaveStore.ts` (key `yoinkers.save.v2`, no migration — bump to v3 on breaking change) |
 | Wave scaling | `src/systems/EnemySpawner.ts` |
 | Game loop | `src/scenes/GameScene.ts` (612 lines — orchestrator, collisions, win/loss, evolutions) |
@@ -60,7 +60,7 @@ Vampire-Survivors-style roguelike. KAPLAY 3001 + Vite + TypeScript. Single packa
 - **KAPLAY 3001 idioms**: `obj.scaleTo(n)` and `obj.scaleTo(x, y)` to mutate scale (NOT `obj.scale = n`). `k.setCamPos(...)` (not `camPos`). The scale setter throws on non-Vec2 writes.
 - **Orbit sprites**: `spawnProjectile` creates the sprite with `{ frame: 0 }` then wraps `obj.play("spin")` in `try/catch` so non-animated orbit sprites (e.g. `weapon-katana` for dualKatana) don't crash.
 - **Player movement source**: keyboard buttons (`up/down/left/right` from `main.ts:21-26`) AND mobile joystick coexist. `updatePlayer` uses mobile if active, keyboard otherwise.
-- **Active item is a single slot.** Pickup of `redBull` / `novaBlast` sets `player.stats.activeItem` and resets `activeItemCooldownMs`. SPACE or mobile-tap consumes + sets cooldown. HUD shows `(SPACE) <label> <Ns>` during cooldown.
+- **Active item is a one-time single slot.** Pickup of `redBull` / `novaBlast` sets `player.stats.activeItem`. SPACE or mobile-tap consumes it and writes `activeItem = null` — there is no cooldown anymore. The `activeItemCooldownMs` field is still on `PlayerStats` (and HUD still has a cooldown-display branch) but is never set; safe to treat as dead.
 - **Max 5 weapons per run.** `UpgradeSystem.isAvailable` filters out `weapon-unlock` choices when `weapons.length >= 5`. Evolutions replace (splice + push) so the cap isn't bypassed.
 - **Procedural sprites.** `src/assets/SpriteGen.ts` draws PNGs on a `<canvas>` and passes `canvas.toDataURL()` to `k.loadSprite`. Used for `jesus-walk` (matches the 4×4 PLAYER_ANIMS layout), `holy-beam`, `holy-water`. Only runs in the browser.
 - **Stat multipliers are multiplicative** on `PlayerStats` (`damageMult`, `cooldownMult`, `magnetMult`, `xpMult`, `damageBuffMult`, `speedBuffMult`). Buffs expire via `*BuffExpiresMs`.
