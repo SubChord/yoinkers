@@ -45,21 +45,27 @@ k.loadSprite("player-walk", "assets/Actor/Characters/NinjaGirl/Walk.png", {
   anims: PLAYER_ANIMS,
 });
 
-k.loadSprite("enemy-slime", "assets/Actor/Monster/Slime/SpriteSheet.png", {
-  sliceX: 4,
-  sliceY: 4,
-  anims: ENEMY_ANIMS,
-});
-k.loadSprite("enemy-skel", "assets/Actor/Monster/SkullBlue/SpriteSheet.png", {
-  sliceX: 4,
-  sliceY: 4,
-  anims: ENEMY_ANIMS,
-});
-k.loadSprite("enemy-bat", "assets/Actor/Monster/BlueBat/SpriteSheet.png", {
-  sliceX: 4,
-  sliceY: 4,
-  anims: ENEMY_ANIMS,
-});
+const ENEMY_SPRITES: Array<{ key: string; path: string }> = [
+  { key: "enemy-slime", path: "assets/Actor/Monster/Slime/SpriteSheet.png" },
+  { key: "enemy-skel", path: "assets/Actor/Monster/SkullBlue/SpriteSheet.png" },
+  { key: "enemy-bat", path: "assets/Actor/Monster/BlueBat/SpriteSheet.png" },
+  { key: "enemy-mushroom", path: "assets/Actor/Monster/Mushroom/SpriteSheet.png" },
+  { key: "enemy-snake", path: "assets/Actor/Monster/Snake/SpriteSheet.png" },
+  { key: "enemy-spider", path: "assets/Actor/Monster/SpiderRed/SpriteSheet.png" },
+  { key: "enemy-spirit", path: "assets/Actor/Monster/Spirit/SpriteSheet.png" },
+  { key: "enemy-racoon", path: "assets/Actor/Monster/GoldRacoon/SpriteSheet.png" },
+  { key: "enemy-octopus", path: "assets/Actor/Monster/GreenOctopus/SpriteSheet.png" },
+  { key: "enemy-mole", path: "assets/Actor/Monster/Mole/SpriteSheet.png" },
+  { key: "enemy-owl", path: "assets/Actor/Monster/Owl/SpriteSheet.png" },
+];
+
+for (const enemy of ENEMY_SPRITES) {
+  k.loadSprite(enemy.key, enemy.path, {
+    sliceX: 4,
+    sliceY: 4,
+    anims: ENEMY_ANIMS,
+  });
+}
 
 k.loadSprite("gem", "assets/Items/Collectibles/gem.png");
 k.loadSprite("shuriken", "assets/Items/Weapon/shuriken-icon.png");

@@ -7,7 +7,7 @@ export const PLAYER_BASE_HP = 100;
 export const PLAYER_BASE_SPEED = 240;
 export const PLAYER_IFRAME_MS = 300;
 
-export const WAVE_DURATION_MS = 30_000;
+export const WAVE_DURATION_MS = 22_000;
 export const GAME_DURATION_MS = 15 * 60 * 1000;
 
 export const BASE_GEM_MAGNET_RANGE = 140;

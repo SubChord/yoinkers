@@ -169,7 +169,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       }
 
       updatePlayer(k, player, dt);
-      spawner.update(dt);
+      spawner.update(dt, nowMs);
       weapons.update(nowMs, dt);
       chests.update(nowMs, dt);
 

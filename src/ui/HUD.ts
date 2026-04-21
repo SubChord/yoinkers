@@ -3,6 +3,7 @@ import { GAME_WIDTH, SCORE_WAVE_MULTIPLIER, XP_PER_LEVEL } from "../config/GameC
 import type { Player } from "../entities/Player";
 
 export interface HudRefs {
+  k: KAPLAYCtx;
   hpText: GameObj;
   xpText: GameObj;
   waveText: GameObj;
@@ -14,7 +15,13 @@ export interface HudRefs {
 export function createHud(k: KAPLAYCtx): HudRefs {
   const hpText = k.add([k.text("HP: 100 / 100", { size: 22 }), k.pos(20, 20), k.fixed(), k.z(100)]);
   const xpText = k.add([k.text("XP: 0 / 50  Lv 1", { size: 20 }), k.pos(20, 52), k.fixed(), k.z(100)]);
-  const waveText = k.add([k.text("Wave 1", { size: 24 }), k.pos(GAME_WIDTH - 180, 20), k.fixed(), k.z(100)]);
+  const waveText = k.add([
+    k.text("Wave 1", { size: 24 }),
+    k.pos(GAME_WIDTH - 220, 20),
+    k.color(255, 255, 255),
+    k.fixed(),
+    k.z(100),
+  ]);
   const timerText = k.add([k.text("15:00", { size: 24 }), k.pos(GAME_WIDTH / 2 - 44, 20), k.fixed(), k.z(100)]);
   const scoreText = k.add([k.text("Score: 0", { size: 20 }), k.pos(GAME_WIDTH / 2 - 52, 52), k.fixed(), k.z(100)]);
   const weaponsText = k.add([
@@ -25,7 +32,7 @@ export function createHud(k: KAPLAYCtx): HudRefs {
     k.z(100),
   ]);
 
-  return { hpText, xpText, waveText, timerText, scoreText, weaponsText };
+  return { k, hpText, xpText, waveText, timerText, scoreText, weaponsText };
 }
 
 export interface HudState {
@@ -41,7 +48,11 @@ export function updateHud(refs: HudRefs, state: HudState): void {
 
   setText(refs.hpText, `HP: ${Math.ceil(s.hp)} / ${s.maxHp}`);
   setText(refs.xpText, `XP: ${Math.floor(s.xp)} / ${nextThreshold}  Lv ${s.level + 1}`);
-  setText(refs.waveText, `Wave ${state.wave}`);
+  const isBossWave = state.wave > 0 && state.wave % 5 === 0;
+  setText(refs.waveText, isBossWave ? `Wave ${state.wave}  BOSS!` : `Wave ${state.wave}`);
+  (refs.waveText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color = isBossWave
+    ? refs.k.rgb(255, 130, 130)
+    : refs.k.rgb(255, 255, 255);
   setText(
     refs.scoreText,
     `Score: ${state.enemiesKilled * Math.max(1, state.wave) * SCORE_WAVE_MULTIPLIER}`,
