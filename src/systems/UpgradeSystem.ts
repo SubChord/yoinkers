@@ -35,6 +35,11 @@ function isAvailable(def: UpgradeDef, player: Player): boolean {
     return player.stats.weapons.includes(def.weapon);
   }
 
+  // Active items: available if you don't already have this one equipped
+  if (def.kind === "active-item") {
+    return player.stats.activeItem !== def.activeItem;
+  }
+
   return true;
 }
 
@@ -51,6 +56,12 @@ export function applyUpgrade(player: Player, upgrade: UpgradeDef): void {
 
   if (upgrade.kind === "weapon-upgrade") {
     // Weapon stats are recomputed from upgrade counts inside WeaponSystem.
+    return;
+  }
+
+  if (upgrade.kind === "active-item" && upgrade.activeItem) {
+    stats.activeItem = upgrade.activeItem;
+    stats.activeItemCooldownMs = 0;
     return;
   }
 
@@ -73,9 +84,6 @@ export function applyUpgrade(player: Player, upgrade: UpgradeDef): void {
       break;
     case "boost-cooldown":
       stats.cooldownMult *= 0.92;
-      break;
-    case "unlock-redBull":
-      stats.hasRedBull = true;
       break;
   }
 }
