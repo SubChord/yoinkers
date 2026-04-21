@@ -27,6 +27,9 @@ export interface PlayerStats {
   weapons: WeaponId[];
   upgrades: Record<string, number>;
   gear: Partial<Record<GearId, number>>;
+  rerollsRemaining: number;
+  banishesRemaining: number;
+  bannedUpgrades: string[];
 }
 
 export interface EndStats {

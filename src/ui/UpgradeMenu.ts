@@ -9,6 +9,10 @@ export interface UpgradeMenu {
 export interface UpgradeMenuOpts {
   choices: UpgradeDef[];
   onChoose: (choice: UpgradeDef) => void;
+  onReroll?: () => void;
+  onBanish?: (choice: UpgradeDef) => void;
+  rerollsLeft?: number;
+  banishesLeft?: number;
 }
 
 const CARD_WIDTH = 300;
@@ -129,10 +133,10 @@ export function showUpgradeMenu(k: KAPLAYCtx, opts: UpgradeMenuOpts): UpgradeMen
 
     add(
       k.add([
-        k.text(`Press ${index + 1}`, { size: 18 }),
+        k.text(`Press ${index + 1}`, { size: 16 }),
         k.color(200, 220, 210),
         k.anchor("center"),
-        k.pos(centerX, startY + CARD_HEIGHT - 40),
+        k.pos(centerX, startY + CARD_HEIGHT - 56),
         k.fixed(),
         k.z(503),
       ]),
@@ -159,7 +163,68 @@ export function showUpgradeMenu(k: KAPLAYCtx, opts: UpgradeMenuOpts): UpgradeMen
     });
 
     keyBindings.push(chooseThis);
+
+    // Per-card banish button — only shown when the caller supplies a handler and the player has banishes left.
+    if (opts.onBanish && (opts.banishesLeft ?? 0) > 0) {
+      const banBtn = add(
+        k.add([
+          k.rect(CARD_WIDTH - 60, 28, { radius: 6 }),
+          k.color(90, 40, 40),
+          k.outline(1, k.rgb(220, 150, 150)),
+          k.pos(cx + 30, startY + CARD_HEIGHT - 34),
+          k.area(),
+          k.fixed(),
+          k.z(503),
+        ]),
+      );
+      add(
+        k.add([
+          k.text(`Banish (${opts.banishesLeft} left)`, { size: 14 }),
+          k.color(255, 220, 220),
+          k.anchor("center"),
+          k.pos(centerX, startY + CARD_HEIGHT - 34 + 14),
+          k.fixed(),
+          k.z(504),
+        ]),
+      );
+      banBtn.onClick(() => opts.onBanish?.(choice));
+    }
   });
+
+  // Global Reroll button — centered below the cards.
+  let rerollKeyHandler: ReturnType<KAPLAYCtx["onKeyPress"]> | null = null;
+  if (opts.onReroll) {
+    const hasCharge = (opts.rerollsLeft ?? 0) > 0;
+    const rerollY = startY + CARD_HEIGHT + 30;
+    const rerollBtn = add(
+      k.add([
+        k.rect(260, 44, { radius: 8 }),
+        k.color(hasCharge ? 60 : 50, hasCharge ? 80 : 60, hasCharge ? 140 : 70),
+        k.outline(
+          2,
+          hasCharge ? k.rgb(170, 190, 240) : k.rgb(130, 130, 140),
+        ),
+        k.pos(GAME_WIDTH / 2 - 130, rerollY),
+        k.area(),
+        k.fixed(),
+        k.z(502),
+      ]),
+    );
+    add(
+      k.add([
+        k.text(`(R) Reroll (${opts.rerollsLeft ?? 0} left)`, { size: 18 }),
+        k.color(hasCharge ? 255 : 180, hasCharge ? 255 : 180, hasCharge ? 255 : 180),
+        k.anchor("center"),
+        k.pos(GAME_WIDTH / 2, rerollY + 22),
+        k.fixed(),
+        k.z(503),
+      ]),
+    );
+    if (hasCharge) {
+      rerollBtn.onClick(() => opts.onReroll?.());
+      rerollKeyHandler = k.onKeyPress("r", () => opts.onReroll?.());
+    }
+  }
 
   const keyHandlers = keyBindings.map((choose, i) =>
     k.onKeyPress(`${i + 1}` as any, choose),
@@ -173,6 +238,7 @@ export function showUpgradeMenu(k: KAPLAYCtx, opts: UpgradeMenuOpts): UpgradeMen
       for (const handler of keyHandlers) {
         handler.cancel();
       }
+      rerollKeyHandler?.cancel();
     },
   };
 }

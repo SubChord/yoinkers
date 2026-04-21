@@ -23,6 +23,7 @@ export function pickUpgradeChoices(
 }
 
 function isAvailable(def: UpgradeDef, player: Player): boolean {
+  if (player.stats.bannedUpgrades.includes(def.id)) return false;
   const taken = player.stats.upgrades[def.id] ?? 0;
   if (taken >= def.maxLevel) return false;
 

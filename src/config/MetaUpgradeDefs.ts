@@ -7,7 +7,9 @@ export type MetaUpgradeId =
   | "magnet"
   | "wisdom"
   | "greed"
-  | "headstart";
+  | "headstart"
+  | "reroll"
+  | "banish";
 
 export interface MetaUpgradeDef {
   id: MetaUpgradeId;
@@ -98,6 +100,22 @@ export const META_UPGRADE_DEFS: Record<MetaUpgradeId, MetaUpgradeDef> = {
     baseCost: 200,
     costGrowth: 2.0,
   },
+  reroll: {
+    id: "reroll",
+    label: "Reroll",
+    description: "+1 level-up reroll per run.",
+    maxLevel: 3,
+    baseCost: 150,
+    costGrowth: 1.8,
+  },
+  banish: {
+    id: "banish",
+    label: "Banish",
+    description: "+1 per-run banish — permanently remove an upgrade from this run's pool.",
+    maxLevel: 3,
+    baseCost: 180,
+    costGrowth: 1.8,
+  },
 };
 
 export const META_UPGRADE_ORDER: MetaUpgradeId[] = [
@@ -110,6 +128,8 @@ export const META_UPGRADE_ORDER: MetaUpgradeId[] = [
   "wisdom",
   "greed",
   "headstart",
+  "reroll",
+  "banish",
 ];
 
 export function metaUpgradeCost(def: MetaUpgradeDef, currentLevel: number): number {
@@ -126,6 +146,8 @@ export interface MetaBonuses {
   xpMult: number;
   yoinkMult: number;
   startingLevel: number;
+  rerollsPerRun: number;
+  banishesPerRun: number;
 }
 
 export function computeMetaBonuses(levels: Partial<Record<MetaUpgradeId, number>>): MetaBonuses {
@@ -140,5 +162,7 @@ export function computeMetaBonuses(levels: Partial<Record<MetaUpgradeId, number>
     xpMult: 1 + lvl("wisdom") * 0.04,
     yoinkMult: 1 + lvl("greed") * 0.05,
     startingLevel: lvl("headstart"),
+    rerollsPerRun: lvl("reroll"),
+    banishesPerRun: lvl("banish"),
   };
 }

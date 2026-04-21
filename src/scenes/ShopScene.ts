@@ -8,11 +8,11 @@ import {
 } from "../config/MetaUpgradeDefs";
 import { loadSave, purchaseMetaUpgrade, refundMetaUpgrades } from "../systems/SaveStore";
 
-const CARD_WIDTH = 360;
-const CARD_HEIGHT = 150;
-const COLS = 3;
-const GAP_X = 24;
-const GAP_Y = 22;
+const CARD_WIDTH = 290;
+const CARD_HEIGHT = 132;
+const COLS = 4;
+const GAP_X = 16;
+const GAP_Y = 16;
 
 export function registerShopScene(k: KAPLAYCtx): void {
   k.scene("shop", () => {

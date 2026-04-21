@@ -43,6 +43,9 @@ export function createPlayer(k: KAPLAYCtx, character: CharacterId = "ninja"): Pl
     weapons: [def.startingWeapon],
     upgrades: {},
     gear: {},
+    rerollsRemaining: 0,
+    banishesRemaining: 0,
+    bannedUpgrades: [],
   };
 
   return {

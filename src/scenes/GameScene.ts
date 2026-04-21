@@ -286,9 +286,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     spawner.spawnWave(state.wave);
     quests.onWave(state.wave);
 
-    const openUpgradeMenuIfQueued = () => {
-      if (state.paused || state.levelQueue <= 0) return;
-      state.paused = true;
+    const showNextUpgradeMenu = () => {
       const choices = pickUpgradeChoices(player, () => k.rand(0, 1));
       if (choices.length === 0) {
         state.levelQueue = 0;
@@ -297,6 +295,8 @@ export function registerGameScene(k: KAPLAYCtx): void {
       }
       state.activeMenu = showUpgradeMenu(k, {
         choices,
+        rerollsLeft: player.stats.rerollsRemaining,
+        banishesLeft: player.stats.banishesRemaining,
         onChoose: (choice) => {
           applyUpgrade(player, choice);
           playSfx(k, "sfx-levelup");
@@ -306,7 +306,28 @@ export function registerGameScene(k: KAPLAYCtx): void {
           state.paused = false;
           openUpgradeMenuIfQueued();
         },
+        onReroll: () => {
+          if (player.stats.rerollsRemaining <= 0) return;
+          player.stats.rerollsRemaining -= 1;
+          state.activeMenu?.destroy();
+          state.activeMenu = null;
+          showNextUpgradeMenu();
+        },
+        onBanish: (choice) => {
+          if (player.stats.banishesRemaining <= 0) return;
+          player.stats.banishesRemaining -= 1;
+          player.stats.bannedUpgrades.push(choice.id);
+          state.activeMenu?.destroy();
+          state.activeMenu = null;
+          showNextUpgradeMenu();
+        },
       });
+    };
+
+    const openUpgradeMenuIfQueued = () => {
+      if (state.paused || state.levelQueue <= 0) return;
+      state.paused = true;
+      showNextUpgradeMenu();
     };
 
     k.onUpdate(() => {
@@ -870,5 +891,7 @@ function applyMetaBonuses(player: Player): number {
   player.stats.cooldownMult *= b.cooldownMult;
   player.stats.magnetMult *= b.magnetMult;
   player.stats.xpMult *= b.xpMult;
+  player.stats.rerollsRemaining = b.rerollsPerRun;
+  player.stats.banishesRemaining = b.banishesPerRun;
   return b.startingLevel;
 }
