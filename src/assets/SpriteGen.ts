@@ -191,6 +191,109 @@ export function buildHolyBeamDataURL(): string {
   return canvas.toDataURL("image/png");
 }
 
+/** 48x32 Flying-V electric guitar the player "wields" after the Judas Priest evolution. */
+export function buildGuitarDataURL(): string {
+  const [canvas, ctx] = newCanvas(48, 32);
+
+  // Body — flying V silhouette (two diagonal wings meeting at a center point).
+  ctx.fillStyle = "#2a2a2a";
+  ctx.beginPath();
+  ctx.moveTo(4, 6);
+  ctx.lineTo(22, 22);
+  ctx.lineTo(12, 28);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(4, 26);
+  ctx.lineTo(22, 10);
+  ctx.lineTo(12, 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Body highlights — crimson pinstripe
+  ctx.strokeStyle = "#c41a1a";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(7, 8);
+  ctx.lineTo(20, 17);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(7, 24);
+  ctx.lineTo(20, 15);
+  ctx.stroke();
+
+  // Neck
+  ctx.fillStyle = "#1a1208";
+  ctx.fillRect(22, 14, 18, 4);
+
+  // Fret marks
+  ctx.fillStyle = "#e0e0e0";
+  for (let x = 25; x < 39; x += 3) {
+    ctx.fillRect(x, 14, 1, 4);
+  }
+
+  // Headstock
+  ctx.fillStyle = "#2a2a2a";
+  ctx.fillRect(40, 12, 6, 8);
+  // Tuning pegs (little dots)
+  ctx.fillStyle = "#c0c0c0";
+  ctx.fillRect(41, 13, 1, 1);
+  ctx.fillRect(44, 13, 1, 1);
+  ctx.fillRect(41, 18, 1, 1);
+  ctx.fillRect(44, 18, 1, 1);
+
+  // Strings — faint lines across the neck
+  ctx.strokeStyle = "rgba(220, 220, 220, 0.55)";
+  ctx.lineWidth = 0.5;
+  for (let y = 15; y <= 17; y++) {
+    ctx.beginPath();
+    ctx.moveTo(10, y);
+    ctx.lineTo(42, y);
+    ctx.stroke();
+  }
+
+  // Bridge glint
+  ctx.fillStyle = "#c41a1a";
+  ctx.fillRect(20, 14, 2, 4);
+
+  return canvas.toDataURL("image/png");
+}
+
+/** 24x8 jagged lightning shockwave for Judas Priest power-chord projectiles. */
+export function buildShockwaveDataURL(): string {
+  const [canvas, ctx] = newCanvas(24, 8);
+
+  // Outer glow (soft red)
+  ctx.fillStyle = "rgba(255, 60, 60, 0.35)";
+  ctx.fillRect(0, 2, 24, 4);
+
+  // White-hot jagged bolt
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 4);
+  ctx.lineTo(5, 2);
+  ctx.lineTo(10, 5);
+  ctx.lineTo(15, 3);
+  ctx.lineTo(20, 5);
+  ctx.lineTo(24, 4);
+  ctx.stroke();
+
+  // Yellow hot center
+  ctx.strokeStyle = "#ffe066";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 4);
+  ctx.lineTo(5, 2);
+  ctx.lineTo(10, 5);
+  ctx.lineTo(15, 3);
+  ctx.lineTo(20, 5);
+  ctx.lineTo(24, 4);
+  ctx.stroke();
+
+  return canvas.toDataURL("image/png");
+}
+
 /** 32x32 stacked-swirl poop pile with a couple of buzzing flies. */
 export function buildPoophoodDataURL(): string {
   const [canvas, ctx] = newCanvas(32, 32);

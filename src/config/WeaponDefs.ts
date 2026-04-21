@@ -15,7 +15,8 @@ export type WeaponId =
   | "bloodspikes"
   | "fireTrail"
   | "holyBeam"
-  | "holyWater";
+  | "holyWater"
+  | "judasPriest";
 
 export interface WeaponStats {
   damage: number;
@@ -153,6 +154,13 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     description: "Tosses a vial that shatters into a scorching sacred puddle.",
     spriteKey: "holy-water",
     base: { damage: 10, cooldownMs: 2200, speed: 260, range: 260, count: 1, area: 52 },
+  },
+  judasPriest: {
+    id: "judasPriest",
+    label: "Judas Priest",
+    description: "Shred a diabolical power-chord that rains searing shockwaves on all sides.",
+    spriteKey: "weapon-shockwave",
+    base: { damage: 22, cooldownMs: 500, speed: 560, range: 460, count: 10, area: 20 },
   },
 };
 

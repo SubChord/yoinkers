@@ -140,6 +140,33 @@ export class WeaponSystem {
       case "holyWater":
         this.fireHolyWater(stats);
         break;
+      case "judasPriest":
+        this.fireJudasPriest(stats);
+        break;
+    }
+  }
+
+  private fireJudasPriest(stats: WeaponStats): void {
+    const count = Math.max(8, stats.count);
+    for (let i = 0; i < count; i += 1) {
+      const angle = (Math.PI * 2 * i) / count + this.k.rand(-0.04, 0.04);
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "pierce",
+          weapon: "judasPriest",
+          sprite: WEAPON_DEFS.judasPriest.spriteKey,
+          x: this.player.obj.pos.x,
+          y: this.player.obj.pos.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+          piercesLeft: 99,
+          rotationOffset: 0,
+        }),
+      );
     }
   }
 
@@ -836,5 +863,6 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "fireTrail": return 5;
     case "holyBeam": return 8;
     case "holyWater": return 4;
+    case "judasPriest": return 6;
   }
 }

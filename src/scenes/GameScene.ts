@@ -18,6 +18,12 @@ import { EnemySpawner } from "../systems/EnemySpawner";
 import { GearSystem } from "../systems/GearSystem";
 import { ItemSystem } from "../systems/ItemSystem";
 import { consumeMobileAction, isTouchDevice } from "../systems/MobileInput";
+import {
+  pauseMetalRiff,
+  resumeMetalRiff,
+  startMetalRiff,
+  stopMetalRiff,
+} from "../systems/MetalMode";
 import { MusicSystem } from "../systems/MusicSystem";
 import { burstVfx, impactVfx } from "../systems/PickupVfx";
 import { QuestSystem } from "../systems/QuestSystem";
@@ -164,6 +170,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       state.pauseButtonPaused = true;
       state.pausedAtMs = Date.now();
       music.pause();
+      pauseMetalRiff();
       pauseButton.setPaused(true);
     };
 
@@ -179,6 +186,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       state.pauseButtonPaused = false;
       state.paused = false;
       music.resume();
+      resumeMetalRiff();
       pauseButton.setPaused(false);
     };
 
@@ -194,6 +202,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
         if (announced.has(evo.to)) continue;
         if (!player.stats.weapons.includes(evo.from)) continue;
         if ((player.stats.gear[evo.gear] ?? 0) < 1) continue;
+        if (evo.charRequired && initialSave.selectedCharacter !== evo.charRequired) continue;
 
         announced.add(evo.to);
         state.paused = true;
@@ -204,6 +213,11 @@ export function registerGameScene(k: KAPLAYCtx): void {
         if (!player.stats.weapons.includes(evo.to)) {
           player.stats.weapons.push(evo.to);
         }
+        if (evo.to === "judasPriest") {
+          music.stop();
+          startMetalRiff();
+        }
+        evo.onTrigger?.(k, player);
         showEvolutionPopup(k, {
           title: evo.title,
           subtitle: evo.subtitle,
@@ -603,6 +617,7 @@ function endGame(
   won: boolean,
 ): void {
   music.stop();
+  stopMetalRiff();
   const damageByWeapon = tracker.totals();
   const totalDamage = tracker.totalDamage();
   const stats = {
@@ -633,6 +648,10 @@ interface WeaponEvolution {
   title: string;
   subtitle: string;
   spriteKey: string;
+  /** If set, this evolution only fires for the listed character. */
+  charRequired?: import("../types/GameTypes").CharacterId;
+  /** Optional hook run once when the evolution fires (before the popup). */
+  onTrigger?: (k: KAPLAYCtx, player: Player) => void;
 }
 
 const WEAPON_EVOLUTIONS: WeaponEvolution[] = [
@@ -691,6 +710,29 @@ const WEAPON_EVOLUTIONS: WeaponEvolution[] = [
     title: "Blood Spikes",
     subtitle: "Caltrops + Bag of Yoinking bloom into a lethal thicket of spikes!",
     spriteKey: "weapon-caltrop",
+  },
+  {
+    from: "holyBeam",
+    gear: "hammer",
+    to: "judasPriest",
+    title: "Judas Priest",
+    subtitle: "Holy Beam + Hammer of Might — Jesus straps on a flying V and the music turns to METAL.",
+    spriteKey: "cosmetic-guitar",
+    charRequired: "jesus",
+    onTrigger: (k, player) => {
+      const guitar = k.add([
+        k.sprite("cosmetic-guitar"),
+        k.pos(player.obj.pos.x, player.obj.pos.y + 2),
+        k.anchor("center"),
+        k.scale(1.1),
+        k.rotate(-18),
+        k.z(11),
+      ]);
+      guitar.onUpdate(() => {
+        guitar.pos.x = player.obj.pos.x + 6;
+        guitar.pos.y = player.obj.pos.y + 2;
+      });
+    },
   },
 ];
 

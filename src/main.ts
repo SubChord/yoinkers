@@ -3,10 +3,12 @@ console.log(`%c[yoinkers] build ${__COMMIT_HASH__}`, "color: #0f0; font-weight: 
 
 import kaplay from "kaplay";
 import {
+  buildGuitarDataURL,
   buildHolyBeamDataURL,
   buildHolyWaterDataURL,
   buildJesusWalkDataURL,
   buildPoophoodDataURL,
+  buildShockwaveDataURL,
 } from "./assets/SpriteGen";
 import { GAME_HEIGHT, GAME_WIDTH } from "./config/GameConfig";
 import { GEAR_DEFS } from "./config/GearDefs";
@@ -112,6 +114,8 @@ k.loadSprite("fire-ground", "assets/Items/Weapon/fire-ground.png");
 k.loadSprite("holy-beam", buildHolyBeamDataURL());
 k.loadSprite("holy-water", buildHolyWaterDataURL());
 k.loadSprite("cosmetic-poophood", buildPoophoodDataURL());
+k.loadSprite("cosmetic-guitar", buildGuitarDataURL());
+k.loadSprite("weapon-shockwave", buildShockwaveDataURL());
 k.loadSprite("chest", "assets/Items/Treasure/chest.png", { sliceX: 2, sliceY: 1 });
 k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
 k.loadSprite("item-redbull", "assets/Items/Consumables/redbull.png");
