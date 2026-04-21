@@ -5,6 +5,7 @@ import type { Enemy } from "../entities/Enemy";
 import { spawnItem, updateItem, type Item } from "../entities/Item";
 import type { Player } from "../entities/Player";
 import type { EnemySpawner } from "./EnemySpawner";
+import { burstVfx, popLabel } from "./PickupVfx";
 
 const WORLD_SPAWN_INTERVAL_MS = 14_000;
 const MAX_ACTIVE_ITEMS = 10;
@@ -78,7 +79,19 @@ export class ItemSystem {
   private applyEffect(def: ItemDef, x: number, y: number): void {
     this.onPlaySfx("sfx-gem");
     this.onPickup();
-    this.showPickupLabel(x, y, def);
+
+    burstVfx(this.k, {
+      x, y,
+      color: [246, 238, 180],
+      ringEnd: 32,
+      sparkles: 7,
+      shake: 2,
+    });
+    popLabel(this.k, {
+      x, y, text: def.pickupText,
+      color: [246, 238, 180],
+      durationMs: POPUP_MS,
+    });
 
     const now = Date.now();
     const stats = this.player.stats;
@@ -132,25 +145,6 @@ export class ItemSystem {
       enemy.slowMult = mult;
       enemy.slowExpiresMs = expires;
     }
-  }
-
-  private showPickupLabel(x: number, y: number, def: ItemDef): void {
-    const label = this.k.add([
-      this.k.text(def.pickupText, { size: 16 }),
-      this.k.pos(x, y - 20),
-      this.k.anchor("center"),
-      this.k.color(246, 238, 180),
-      this.k.opacity(1),
-      this.k.z(50),
-    ]);
-    let elapsed = 0;
-    const duration = POPUP_MS / 1000;
-    label.onUpdate(() => {
-      elapsed += this.k.dt();
-      label.pos.y -= 22 * this.k.dt();
-      (label as unknown as { opacity: number }).opacity = Math.max(0, 1 - elapsed / duration);
-      if (elapsed >= duration) label.destroy();
-    });
   }
 
   public knownItemIds(): ItemId[] {

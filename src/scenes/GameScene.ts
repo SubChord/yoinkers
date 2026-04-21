@@ -15,6 +15,7 @@ import { EnemySpawner } from "../systems/EnemySpawner";
 import { GearSystem } from "../systems/GearSystem";
 import { ItemSystem } from "../systems/ItemSystem";
 import { MusicSystem } from "../systems/MusicSystem";
+import { burstVfx } from "../systems/PickupVfx";
 import { QuestSystem } from "../systems/QuestSystem";
 import { persistRun } from "../systems/SaveStore";
 import { StatsTracker } from "../systems/StatsTracker";
@@ -206,7 +207,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       gear.update(nowMs, dt);
 
       handleEnemyTouchPlayer(k, player, spawner, nowMs, damageFlash);
-      collectGems(gems, player, dt, quests);
+      collectGems(k, gems, player, dt, quests);
 
       maybeLevelUp(player, state, quests);
 
@@ -268,14 +269,31 @@ function handleEnemyTouchPlayer(
   }
 }
 
+const GEM_COLORS: Record<string, [number, number, number]> = {
+  small: [100, 220, 120],
+  medium: [180, 120, 220],
+  large: [220, 80, 80],
+  huge: [240, 220, 60],
+};
+
 function collectGems(
+  k: KAPLAYCtx,
   gems: XpGem[],
   player: Player,
   dt: number,
   quests: QuestSystem,
 ): void {
   for (let i = gems.length - 1; i >= 0; i -= 1) {
-    if (updateGem(gems[i], player, dt) === "collected") {
+    const gem = gems[i];
+    if (updateGem(gem, player, dt) === "collected") {
+      burstVfx(k, {
+        x: player.obj.pos.x,
+        y: player.obj.pos.y,
+        color: GEM_COLORS[gem.tier] ?? [100, 220, 120],
+        ringEnd: 18,
+        sparkles: 4,
+        duration: 0.2,
+      });
       quests.onGem();
       gems.splice(i, 1);
     }

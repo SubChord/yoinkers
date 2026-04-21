@@ -9,6 +9,7 @@ import {
 import type { Enemy } from "../entities/Enemy";
 import { spawnGear, updateGearDrop, type GearDrop } from "../entities/Gear";
 import type { Player } from "../entities/Player";
+import { burstVfx, popLabel } from "./PickupVfx";
 
 const WORLD_SPAWN_INTERVAL_MS = 60_000;
 const MAX_ACTIVE = 4;
@@ -79,26 +80,21 @@ export class GearSystem {
     this.player.stats.gear[id] = (this.player.stats.gear[id] ?? 0) + 1;
     this.onPlaySfx("sfx-levelup");
     this.onPickup(id);
-    this.showPickupLabel(x, y, id);
-  }
 
-  private showPickupLabel(x: number, y: number, id: GearId): void {
-    const def = GEAR_DEFS[id];
-    const label = this.k.add([
-      this.k.text(def.label, { size: 16 }),
-      this.k.pos(x, y - 26),
-      this.k.anchor("center"),
-      this.k.color(255, 232, 140),
-      this.k.opacity(1),
-      this.k.z(50),
-    ]);
-    let elapsed = 0;
-    const duration = POPUP_MS / 1000;
-    label.onUpdate(() => {
-      elapsed += this.k.dt();
-      label.pos.y -= 24 * this.k.dt();
-      (label as unknown as { opacity: number }).opacity = Math.max(0, 1 - elapsed / duration);
-      if (elapsed >= duration) label.destroy();
+    burstVfx(this.k, {
+      x, y,
+      color: [255, 230, 140],
+      ringEnd: 44,
+      sparkles: 10,
+      duration: 0.4,
+      shake: 3,
+    });
+    popLabel(this.k, {
+      x, y,
+      text: GEAR_DEFS[id].label,
+      color: [255, 232, 140],
+      durationMs: POPUP_MS,
+      popScale: 1.8,
     });
   }
 }

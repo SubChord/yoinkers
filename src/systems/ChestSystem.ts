@@ -2,6 +2,7 @@ import type { KAPLAYCtx } from "kaplay";
 import { WORLD_SIZE } from "../config/GameConfig";
 import { spawnChest, updateChest, applyLoot, rollLoot, lootLabel, type Chest, type LootKind } from "../entities/Chest";
 import type { Player } from "../entities/Player";
+import { burstVfx, popLabel } from "./PickupVfx";
 
 const CHEST_SPAWN_INTERVAL_MS = 18_000;
 const CHEST_MIN_SPAWN_DISTANCE = 220;
@@ -33,7 +34,25 @@ export class ChestSystem {
       if (updateChest(chest, this.player, dt)) {
         const loot = rollLoot(() => this.k.rand(0, 1));
         applyLoot(this.player, loot);
-        this.showLootPopup(chest.obj.pos.x, chest.obj.pos.y, loot);
+
+        const cx = chest.obj.pos.x;
+        const cy = chest.obj.pos.y;
+        burstVfx(this.k, {
+          x: cx, y: cy,
+          color: [255, 236, 160],
+          ringEnd: 48,
+          sparkles: 12,
+          duration: 0.45,
+          shake: 4,
+        });
+        popLabel(this.k, {
+          x: cx, y: cy,
+          text: lootLabel(loot),
+          color: [255, 236, 160],
+          durationMs: LOOT_POPUP_DURATION_MS,
+          popScale: 2.0,
+        });
+
         this.onPlaySfx("sfx-gem");
         this.onOpen();
         this.k.wait(0.3, () => {
@@ -57,25 +76,4 @@ export class ChestSystem {
     }
   }
 
-  private showLootPopup(x: number, y: number, loot: LootKind): void {
-    const label = this.k.add([
-      this.k.text(lootLabel(loot), { size: 16 }),
-      this.k.pos(x, y - 24),
-      this.k.anchor("center"),
-      this.k.color(255, 236, 160),
-      this.k.z(50),
-      this.k.opacity(1),
-    ]);
-
-    let elapsed = 0;
-    const duration = LOOT_POPUP_DURATION_MS / 1000;
-    label.onUpdate(() => {
-      elapsed += this.k.dt();
-      label.pos.y -= 20 * this.k.dt();
-      (label as unknown as { opacity: number }).opacity = Math.max(0, 1 - elapsed / duration);
-      if (elapsed >= duration) {
-        label.destroy();
-      }
-    });
-  }
 }
