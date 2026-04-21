@@ -45,7 +45,11 @@ export class WeaponSystem {
     const countBonus = countLevel;
 
     return {
-      damage: Math.floor((def.base.damage + damageBonus) * this.player.stats.damageMult),
+      damage: Math.floor(
+        (def.base.damage + damageBonus) *
+          this.player.stats.damageMult *
+          this.player.stats.damageBuffMult,
+      ),
       cooldownMs: def.base.cooldownMs * Math.pow(0.85, cooldownLevel) * this.player.stats.cooldownMult,
       speed: def.base.speed,
       range: def.base.range,

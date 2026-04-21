@@ -29,6 +29,10 @@ export function createPlayer(k: KAPLAYCtx): Player {
     magnetMult: 1,
     damageMult: 1,
     cooldownMult: 1,
+    damageBuffMult: 1,
+    speedBuffMult: 1,
+    damageBuffExpiresMs: 0,
+    speedBuffExpiresMs: 0,
     weapons: ["shuriken"],
     upgrades: {},
   };
@@ -51,8 +55,19 @@ export function updatePlayer(k: KAPLAYCtx, player: Player, dt: number): void {
 
   const moving = dir.x !== 0 || dir.y !== 0;
 
+  const now = Date.now();
+  if (player.stats.damageBuffExpiresMs && now >= player.stats.damageBuffExpiresMs) {
+    player.stats.damageBuffMult = 1;
+    player.stats.damageBuffExpiresMs = 0;
+  }
+  if (player.stats.speedBuffExpiresMs && now >= player.stats.speedBuffExpiresMs) {
+    player.stats.speedBuffMult = 1;
+    player.stats.speedBuffExpiresMs = 0;
+  }
+
   if (moving) {
-    const step = dir.unit().scale(player.stats.speed * dt);
+    const effectiveSpeed = player.stats.speed * player.stats.speedBuffMult;
+    const step = dir.unit().scale(effectiveSpeed * dt);
     const p = player.obj.pos.add(step);
     p.x = k.clamp(p.x, -WORLD_SIZE / 2 + 24, WORLD_SIZE / 2 - 24);
     p.y = k.clamp(p.y, -WORLD_SIZE / 2 + 24, WORLD_SIZE / 2 - 24);

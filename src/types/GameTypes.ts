@@ -12,6 +12,10 @@ export interface PlayerStats {
   magnetMult: number;
   damageMult: number;
   cooldownMult: number;
+  damageBuffMult: number;
+  speedBuffMult: number;
+  damageBuffExpiresMs: number;
+  speedBuffExpiresMs: number;
   weapons: WeaponId[];
   upgrades: Record<string, number>;
 }

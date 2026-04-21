@@ -12,7 +12,10 @@ export interface Enemy {
   area: number;
   typeId: EnemyId;
   isBoss: boolean;
+  isElite: boolean;
   facing: "left" | "right";
+  slowMult: number;
+  slowExpiresMs: number;
 }
 
 export interface SpawnOpts {
@@ -61,19 +64,28 @@ export function spawnEnemy(
     area: def.area,
     typeId: def.id,
     isBoss: def.boss,
+    isElite: !!opts.elite,
     facing: "right",
+    slowMult: 1,
+    slowExpiresMs: 0,
   };
 }
 
 export function updateEnemy(enemy: Enemy, player: Player, dt: number): void {
+  if (enemy.slowExpiresMs && Date.now() >= enemy.slowExpiresMs) {
+    enemy.slowMult = 1;
+    enemy.slowExpiresMs = 0;
+  }
+
   const dx = player.obj.pos.x - enemy.obj.pos.x;
   const dy = player.obj.pos.y - enemy.obj.pos.y;
   const len = Math.hypot(dx, dy) || 1;
   const nx = dx / len;
   const ny = dy / len;
 
-  enemy.obj.pos.x += nx * enemy.speed * dt;
-  enemy.obj.pos.y += ny * enemy.speed * dt;
+  const effectiveSpeed = enemy.speed * enemy.slowMult;
+  enemy.obj.pos.x += nx * effectiveSpeed * dt;
+  enemy.obj.pos.y += ny * effectiveSpeed * dt;
 
   const nextFacing: "left" | "right" = nx < 0 ? "left" : "right";
   if (nextFacing !== enemy.facing) {

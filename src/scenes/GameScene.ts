@@ -11,6 +11,7 @@ import { scatterScenery } from "../entities/Scenery";
 import { updateGem, spawnXpGem, type XpGem } from "../entities/XpGem";
 import { ChestSystem } from "../systems/ChestSystem";
 import { EnemySpawner } from "../systems/EnemySpawner";
+import { ItemSystem } from "../systems/ItemSystem";
 import { MusicSystem } from "../systems/MusicSystem";
 import { WeaponSystem } from "../systems/WeaponSystem";
 import { applyUpgrade, pickUpgradeChoices } from "../systems/UpgradeSystem";
@@ -25,6 +26,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     const player = createPlayer(k);
     const spawner = new EnemySpawner(k, player);
     const gems: XpGem[] = [];
+    const items = new ItemSystem(k, player, spawner, (key) => playSfx(k, key));
 
     const weapons = new WeaponSystem(
       k,
@@ -32,6 +34,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       spawner,
       (enemy, index) => {
         gems.push(spawnXpGem(k, enemy.obj.pos.x, enemy.obj.pos.y, enemy.xpValue));
+        items.onEnemyKilled(enemy, enemy.isElite);
         enemy.obj.destroy();
         spawner.removeAt(index);
         state.enemiesKilled += 1;
@@ -116,6 +119,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
       spawner.update(dt, nowMs);
       weapons.update(nowMs, dt);
       chests.update(nowMs, dt);
+      items.update(nowMs, dt);
 
       handleEnemyTouchPlayer(k, player, spawner, nowMs);
       collectGems(gems, player, dt);

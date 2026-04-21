@@ -1,5 +1,6 @@
 import kaplay from "kaplay";
 import { GAME_HEIGHT, GAME_WIDTH } from "./config/GameConfig";
+import { ITEM_DEFS } from "./config/ItemDefs";
 import { MUSIC_TRACKS } from "./config/MusicDefs";
 import { registerEndScene } from "./scenes/EndScene";
 import { registerGameScene } from "./scenes/GameScene";
@@ -79,6 +80,10 @@ k.loadSprite("magic-orb", "assets/Items/Weapon/magic-orb-blue.png", {
 k.loadSprite("boomerang", "assets/Items/Weapon/kunai.png");
 k.loadSprite("chest", "assets/Items/Treasure/chest.png", { sliceX: 2, sliceY: 1 });
 k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
+
+for (const item of Object.values(ITEM_DEFS)) {
+  k.loadSprite(item.spriteKey, `assets/Items/Consumables/${item.id}.png`);
+}
 
 for (const track of MUSIC_TRACKS) {
   k.loadSound(track.soundKey, track.file);
