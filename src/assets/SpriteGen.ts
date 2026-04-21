@@ -191,6 +191,71 @@ export function buildHolyBeamDataURL(): string {
   return canvas.toDataURL("image/png");
 }
 
+/** 32x32 stacked-swirl poop pile with a couple of buzzing flies. */
+export function buildPoophoodDataURL(): string {
+  const [canvas, ctx] = newCanvas(32, 32);
+
+  // Soft ground shadow under the pile
+  ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+  ctx.beginPath();
+  ctx.ellipse(16, 27, 11, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Bottom swirl (base)
+  ctx.fillStyle = "#5a3a1c";
+  ctx.beginPath();
+  ctx.ellipse(16, 24, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#6b4524";
+  ctx.beginPath();
+  ctx.ellipse(16, 23, 9, 3.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Middle swirl
+  ctx.fillStyle = "#5a3a1c";
+  ctx.beginPath();
+  ctx.ellipse(16, 18, 7, 3.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#7a5028";
+  ctx.beginPath();
+  ctx.ellipse(16, 17, 6, 2.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Top swirl (tip)
+  ctx.fillStyle = "#5a3a1c";
+  ctx.beginPath();
+  ctx.ellipse(16, 13, 4, 2.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#8a5c30";
+  ctx.beginPath();
+  ctx.ellipse(16, 12, 3, 1.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Little tip peak
+  ctx.fillStyle = "#5a3a1c";
+  ctx.fillRect(15, 9, 2, 2);
+  ctx.fillStyle = "#9c6836";
+  ctx.fillRect(15, 10, 2, 1);
+
+  // Highlights
+  ctx.fillStyle = "rgba(255, 220, 160, 0.35)";
+  ctx.fillRect(11, 22, 3, 1);
+  ctx.fillRect(12, 16, 2, 1);
+  ctx.fillRect(13, 11, 2, 1);
+
+  // Two flies buzzing nearby (tiny dark specks with green tint wings)
+  ctx.fillStyle = "#1c1c1c";
+  ctx.fillRect(4, 6, 2, 2);
+  ctx.fillRect(26, 10, 2, 2);
+  ctx.fillStyle = "rgba(140, 220, 120, 0.85)";
+  ctx.fillRect(3, 5, 1, 1);
+  ctx.fillRect(6, 5, 1, 1);
+  ctx.fillRect(25, 9, 1, 1);
+  ctx.fillRect(28, 9, 1, 1);
+
+  return canvas.toDataURL("image/png");
+}
+
 /** 16x16 holy water vial. */
 export function buildHolyWaterDataURL(): string {
   const [canvas, ctx] = newCanvas(16, 16);

@@ -5,8 +5,11 @@ import { WEAPON_DEFS } from "../config/WeaponDefs";
 import {
   isCharacterUnlocked,
   loadSave,
+  POOPHOOD_COST,
   purchaseCharacterUnlock,
+  purchasePoophood,
   setSelectedCharacter,
+  togglePoophood,
 } from "../systems/SaveStore";
 
 const CARD_WIDTH = 420;
@@ -65,8 +68,93 @@ export function registerCharactersScene(k: KAPLAYCtx): void {
     ]);
     backBtn.onClick(() => k.go("menu"));
 
+    drawPoophoodRow(k, save);
+
     k.onKeyPress("escape", () => k.go("menu"));
     k.onKeyPress("backspace", () => k.go("menu"));
+  });
+}
+
+function drawPoophoodRow(k: KAPLAYCtx, save: ReturnType<typeof loadSave>): void {
+  const rowY = GAME_HEIGHT - 80;
+  const rowCx = GAME_WIDTH - 340;
+
+  // Preview sprite
+  k.add([
+    k.sprite("cosmetic-poophood"),
+    k.anchor("center"),
+    k.pos(rowCx - 210, rowY + 26),
+    k.scale(1.6),
+    k.fixed(),
+  ]);
+
+  k.add([
+    k.text("Poophood (cosmetic head)", { size: 18 }),
+    k.color(255, 232, 180),
+    k.anchor("left"),
+    k.pos(rowCx - 170, rowY + 16),
+    k.fixed(),
+  ]);
+  k.add([
+    k.text(
+      save.poophoodUnlocked
+        ? save.wearingPoophood
+          ? "Currently worn. Click to remove."
+          : "Unlocked. Click to wear."
+        : `Unlock for ${POOPHOOD_COST} ¥`,
+      { size: 14 },
+    ),
+    k.color(210, 224, 210),
+    k.anchor("left"),
+    k.pos(rowCx - 170, rowY + 40),
+    k.fixed(),
+  ]);
+
+  const label = !save.poophoodUnlocked
+    ? save.yoinks >= POOPHOOD_COST
+      ? `UNLOCK — ${POOPHOOD_COST} ¥`
+      : `NEED ${POOPHOOD_COST} ¥`
+    : save.wearingPoophood
+      ? "REMOVE"
+      : "WEAR";
+  const bgColor: [number, number, number] = !save.poophoodUnlocked
+    ? save.yoinks >= POOPHOOD_COST
+      ? [110, 88, 42]
+      : [70, 54, 54]
+    : save.wearingPoophood
+      ? [80, 140, 96]
+      : [60, 108, 80];
+  const outlineColor: [number, number, number] = !save.poophoodUnlocked
+    ? save.yoinks >= POOPHOOD_COST
+      ? [244, 220, 150]
+      : [180, 160, 160]
+    : [210, 238, 196];
+
+  const btn = k.add([
+    k.rect(160, 44, { radius: 8 }),
+    k.color(bgColor[0], bgColor[1], bgColor[2]),
+    k.outline(2, k.rgb(outlineColor[0], outlineColor[1], outlineColor[2])),
+    k.pos(GAME_WIDTH - 200, rowY + 4),
+    k.anchor("center"),
+    k.area(),
+    k.fixed(),
+  ]);
+  k.add([
+    k.text(label, { size: 16 }),
+    k.color(255, 255, 255),
+    k.anchor("center"),
+    k.pos(GAME_WIDTH - 200, rowY + 4),
+    k.fixed(),
+  ]);
+
+  btn.onClick(() => {
+    if (!save.poophoodUnlocked) {
+      const next = purchasePoophood();
+      if (next.yoinks === save.yoinks) return;
+    } else {
+      togglePoophood();
+    }
+    k.go("characters");
   });
 }
 

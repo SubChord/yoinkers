@@ -31,6 +31,8 @@ export interface SaveData {
   lastYoinksEarned: number;
   selectedCharacter: CharacterId;
   unlockedCharacters: CharacterId[];
+  poophoodUnlocked: boolean;
+  wearingPoophood: boolean;
 }
 
 const EMPTY_SAVE: SaveData = {
@@ -54,7 +56,11 @@ const EMPTY_SAVE: SaveData = {
   lastYoinksEarned: 0,
   selectedCharacter: "ninja",
   unlockedCharacters: ["ninja"],
+  poophoodUnlocked: false,
+  wearingPoophood: false,
 };
+
+export const POOPHOOD_COST = 50;
 
 export function loadSave(): SaveData {
   try {
@@ -80,6 +86,8 @@ export function loadSave(): SaveData {
         parsed.selectedCharacter,
         sanitizeUnlockedCharacters(parsed.unlockedCharacters, parsed.metaUpgrades),
       ),
+      poophoodUnlocked: parsed.poophoodUnlocked === true,
+      wearingPoophood: parsed.wearingPoophood === true && parsed.poophoodUnlocked === true,
     };
   } catch {
     return cloneEmpty();
@@ -205,6 +213,39 @@ export function setSelectedCharacter(id: CharacterId): void {
 
 export function isCharacterUnlocked(save: SaveData, id: CharacterId): boolean {
   return save.unlockedCharacters.includes(id);
+}
+
+export function purchasePoophood(): SaveData {
+  const current = loadSave();
+  if (current.poophoodUnlocked) return current;
+  if (current.yoinks < POOPHOOD_COST) return current;
+  const next: SaveData = {
+    ...current,
+    yoinks: current.yoinks - POOPHOOD_COST,
+    poophoodUnlocked: true,
+    wearingPoophood: true,
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+  return next;
+}
+
+export function togglePoophood(): SaveData {
+  const current = loadSave();
+  if (!current.poophoodUnlocked) return current;
+  const next: SaveData = {
+    ...current,
+    wearingPoophood: !current.wearingPoophood,
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+  return next;
 }
 
 export function purchaseCharacterUnlock(id: CharacterId, cost: number): SaveData {

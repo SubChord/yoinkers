@@ -44,7 +44,21 @@ export function registerGameScene(k: KAPLAYCtx): void {
     const mapDef = MAP_DEFS[mapId];
     drawWorld(k, mapDef.palette);
 
-    const player = createPlayer(k, loadSave().selectedCharacter);
+    const initialSave = loadSave();
+    const player = createPlayer(k, initialSave.selectedCharacter);
+    if (initialSave.wearingPoophood) {
+      const hood = k.add([
+        k.sprite("cosmetic-poophood"),
+        k.pos(player.obj.pos.x, player.obj.pos.y - 22),
+        k.anchor("bot"),
+        k.scale(1.4),
+        k.z(11),
+      ]);
+      hood.onUpdate(() => {
+        hood.pos.x = player.obj.pos.x;
+        hood.pos.y = player.obj.pos.y - 22;
+      });
+    }
     const pendingStartLevels = applyMetaBonuses(player);
     const spawner = new EnemySpawner(k, player);
     const gems: XpGem[] = [];

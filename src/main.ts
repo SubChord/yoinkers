@@ -6,6 +6,7 @@ import {
   buildHolyBeamDataURL,
   buildHolyWaterDataURL,
   buildJesusWalkDataURL,
+  buildPoophoodDataURL,
 } from "./assets/SpriteGen";
 import { GAME_HEIGHT, GAME_WIDTH } from "./config/GameConfig";
 import { GEAR_DEFS } from "./config/GearDefs";
@@ -110,6 +111,7 @@ k.loadSprite("fire-trail", "assets/Items/Weapon/fire-trail.png");
 k.loadSprite("fire-ground", "assets/Items/Weapon/fire-ground.png");
 k.loadSprite("holy-beam", buildHolyBeamDataURL());
 k.loadSprite("holy-water", buildHolyWaterDataURL());
+k.loadSprite("cosmetic-poophood", buildPoophoodDataURL());
 k.loadSprite("chest", "assets/Items/Treasure/chest.png", { sliceX: 2, sliceY: 1 });
 k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
 k.loadSprite("item-redbull", "assets/Items/Consumables/redbull.png");
