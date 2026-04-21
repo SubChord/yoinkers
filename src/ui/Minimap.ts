@@ -149,8 +149,8 @@ export function mountMinimap(k: KAPLAYCtx): Minimap {
         const posM = toMinimap(wall.position);
         const gsM = toMinimap(wall.gapStart);
         const geM = toMinimap(wall.gapEnd);
-        const thick = Math.max(2, Math.round((48 / WORLD_SIZE) * SIZE * 1.5));
-        const flash = wall.phase === "telegraph" ? (Math.sin(Date.now() * 0.012) > 0 ? 0.9 : 0.3) : 0.9;
+        const thick = Math.max(3, Math.round((48 / WORLD_SIZE) * SIZE * 3));
+        const flash = wall.phase === "telegraph" ? (Math.sin(Date.now() * 0.012) > 0 ? 1 : 0.4) : 1;
 
         if (horiz) {
           // Top segment

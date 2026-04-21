@@ -1,22 +1,33 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
-import { GAME_WIDTH, WORLD_SIZE } from "../config/GameConfig";
+import { GAME_HEIGHT, GAME_WIDTH, WORLD_SIZE } from "../config/GameConfig";
 import type { Player } from "../entities/Player";
 
 const WALL_THICKNESS = 48;
 const BASE_GAP_SIZE = 240;
 const MIN_GAP_SIZE = 160;
 const GAP_SHRINK_PER_WAVE = 6;
-const BASE_WALL_SPEED = 280;
-const WALL_SPEED_PER_WAVE = 12;
 const WALL_DAMAGE = 50;
 const TELEGRAPH_DURATION_MS = 2500;
 const FIRST_WALL_WAVE = 6;
-const WALL_INTERVAL_MS = 25_000;
+
+// Interval shrinks with each wall
+const BASE_WALL_INTERVAL_MS = 28_000;
+const MIN_WALL_INTERVAL_MS = 16_000;
+const INTERVAL_SHRINK_PER_WALL = 2000;
+
+// Speed ramps: first wall is slow so the player learns the mechanic
+const WALL_BASE_SPEEDS = [180, 240, 280];
+const WALL_SPEED_PER_WAVE = 12;
 
 // Lava palette
 const LAVA_CORE: [number, number, number] = [220, 60, 10];
 const LAVA_BRIGHT: [number, number, number] = [255, 160, 30];
 const LAVA_OUTLINE: [number, number, number] = [255, 200, 60];
+
+// Full-screen popup timing
+const POPUP_DURATION_MS = 2000;
+const POPUP_ENTER_MS = 400;
+const POPUP_EXIT_MS = 400;
 
 type SweepDir = "right" | "down" | "left" | "up";
 
@@ -52,24 +63,14 @@ export class WallHazardSystem {
   private telegraph: Telegraph | null = null;
   private lastWallMs = 0;
   private dirIdx = 0;
-  private warning: GameObj;
+  private wallCount = 0;
 
   constructor(
     private k: KAPLAYCtx,
     private player: Player,
     private playSfx: (key: string) => void,
     private damageFlash: { flash: () => void },
-  ) {
-    this.warning = k.add([
-      k.text("", { size: 22 }),
-      k.pos(GAME_WIDTH - 20, 52),
-      k.anchor("topright"),
-      k.fixed(),
-      k.color(255, 160, 40),
-      k.opacity(0),
-      k.z(101),
-    ]);
-  }
+  ) {}
 
   /** Snapshot for minimap rendering (null when inactive). */
   public snapshot(): WallSnapshot | null {
@@ -91,14 +92,133 @@ export class WallHazardSystem {
 
     if (!this.wall && !this.telegraph) {
       if (this.lastWallMs === 0) this.lastWallMs = nowMs;
-      if (nowMs - this.lastWallMs >= WALL_INTERVAL_MS) {
+      const interval = Math.max(
+        MIN_WALL_INTERVAL_MS,
+        BASE_WALL_INTERVAL_MS - this.wallCount * INTERVAL_SHRINK_PER_WALL,
+      );
+      if (nowMs - this.lastWallMs >= interval) {
         this.beginTelegraph(nowMs, wave);
       }
-      (this.warning as any).opacity = 0;
     }
 
     if (this.telegraph) this.tickTelegraph(nowMs);
     if (this.wall) this.tickWall(dt, nowMs);
+  }
+
+  /* ---- full-screen popup ---- */
+
+  private showPopup(dir: SweepDir): void {
+    const k = this.k;
+    const cx = GAME_WIDTH / 2;
+    const cy = GAME_HEIGHT / 2;
+    const created: GameObj[] = [];
+
+    const dirLabels: Record<SweepDir, string> = {
+      right: "FROM LEFT  >>>",
+      left:  "<<<  FROM RIGHT",
+      down:  "FROM ABOVE  vvv",
+      up:    "^^^  FROM BELOW",
+    };
+
+    // Backdrop
+    const backdrop = k.add([
+      k.rect(GAME_WIDTH, GAME_HEIGHT),
+      k.pos(0, 0), k.color(20, 8, 0), k.opacity(0),
+      k.fixed(), k.z(300),
+    ]);
+    created.push(backdrop);
+
+    // Glow ring
+    const glow = k.add([
+      k.circle(260),
+      k.pos(cx, cy - 10), k.anchor("center"),
+      k.color(255, 120, 20), k.opacity(0), k.scale(0.2),
+      k.fixed(), k.z(301),
+    ]);
+    created.push(glow);
+
+    // Panel
+    const panel = k.add([
+      k.rect(620, 200, { radius: 14 }),
+      k.pos(cx, cy - 10), k.anchor("center"),
+      k.color(40, 16, 8), k.opacity(0), k.scale(0.5),
+      k.outline(3, k.rgb(...LAVA_OUTLINE)),
+      k.fixed(), k.z(302),
+    ]);
+    created.push(panel);
+
+    // Title
+    const title = k.add([
+      k.text("LAVA WALL", { size: 42 }),
+      k.pos(cx, cy - 50), k.anchor("center"),
+      k.color(...LAVA_BRIGHT), k.opacity(0), k.scale(0.5),
+      k.fixed(), k.z(303),
+    ]);
+    created.push(title);
+
+    // Direction
+    const dirText = k.add([
+      k.text(dirLabels[dir], { size: 24 }),
+      k.pos(cx, cy + 10), k.anchor("center"),
+      k.color(255, 220, 150), k.opacity(0),
+      k.fixed(), k.z(303),
+    ]);
+    created.push(dirText);
+
+    // Subtitle
+    const sub = k.add([
+      k.text("FIND THE GAP!", { size: 20 }),
+      k.pos(cx, cy + 50), k.anchor("center"),
+      k.color(60, 255, 80), k.opacity(0),
+      k.fixed(), k.z(303),
+    ]);
+    created.push(sub);
+
+    const startedAt = Date.now();
+
+    backdrop.onUpdate(() => {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed >= POPUP_DURATION_MS) {
+        for (const obj of created) obj.destroy();
+        return;
+      }
+
+      if (elapsed < POPUP_ENTER_MS) {
+        const t = elapsed / POPUP_ENTER_MS;
+        const e = easeOutCubic(t);
+        (backdrop as any).opacity = e * 0.7;
+        (glow as any).opacity = e * 0.3;
+        (panel as any).opacity = e;
+        (title as any).opacity = e;
+        (dirText as any).opacity = t > 0.3 ? (t - 0.3) / 0.7 : 0;
+        (sub as any).opacity = t > 0.5 ? (t - 0.5) / 0.5 : 0;
+        (glow as any).scaleTo(0.2 + e * 1.0);
+        (panel as any).scaleTo(0.5 + easeOutBack(t) * 0.5);
+        (title as any).scaleTo(0.5 + easeOutBack(t) * 0.5);
+      } else if (elapsed > POPUP_DURATION_MS - POPUP_EXIT_MS) {
+        const t = (elapsed - (POPUP_DURATION_MS - POPUP_EXIT_MS)) / POPUP_EXIT_MS;
+        const e = 1 - t;
+        (backdrop as any).opacity = e * 0.7;
+        (glow as any).opacity = e * 0.3;
+        (panel as any).opacity = e;
+        (title as any).opacity = e;
+        (dirText as any).opacity = e;
+        (sub as any).opacity = e;
+      }
+
+      // Pulse glow
+      const pulse = 1 + Math.sin(elapsed * 0.01) * 0.08;
+      (glow as any).scaleTo(1.2 * pulse);
+
+      // Flicker title color
+      const flick = Math.sin(elapsed * 0.008);
+      const tr = LAVA_BRIGHT[0] + Math.floor(flick * 20);
+      const tg = LAVA_BRIGHT[1] - Math.floor(flick * 40);
+      try { (title as any).color = { r: tr, g: Math.max(40, tg), b: 20 }; } catch { /* skip */ }
+    });
+
+    this.playSfx("sfx-hit");
+    this.k.shake(4);
   }
 
   /* ---- telegraph ---- */
@@ -115,7 +235,6 @@ export class WallHazardSystem {
     );
     const horiz = dir === "right" || dir === "left";
 
-    // Place gap near player on the perpendicular axis
     const playerPerp = horiz ? this.player.obj.pos.y : this.player.obj.pos.x;
     const offset = this.k.rand(-180, 180);
     const gapCenter = Math.max(
@@ -125,7 +244,11 @@ export class WallHazardSystem {
     const gapStart = gapCenter - gapSize / 2;
     const gapEnd = gapCenter + gapSize / 2;
 
-    const speed = BASE_WALL_SPEED + (wave - FIRST_WALL_WAVE) * WALL_SPEED_PER_WAVE;
+    const speedIdx = Math.min(this.wallCount, WALL_BASE_SPEEDS.length - 1);
+    const speed = WALL_BASE_SPEEDS[speedIdx] + Math.max(0, wave - FIRST_WALL_WAVE) * WALL_SPEED_PER_WAVE;
+
+    // Show full-screen popup
+    this.showPopup(dir);
 
     // Flashing lava edge markers
     const objs: GameObj[] = [];
@@ -173,14 +296,6 @@ export class WallHazardSystem {
       ]));
     }
 
-    const labels: Record<SweepDir, string> = {
-      right: "LAVA <<<",
-      left: ">>> LAVA",
-      down: "LAVA ^^^",
-      up: "vvv LAVA",
-    };
-    (this.warning as any).text = labels[dir];
-
     this.telegraph = { objs, startMs: nowMs, direction: dir, gapStart, gapEnd, speed };
   }
 
@@ -189,13 +304,13 @@ export class WallHazardSystem {
     const elapsed = nowMs - t.startMs;
     const flash = Math.sin(elapsed * 0.012) > 0;
     for (const obj of t.objs) (obj as any).opacity = flash ? 0.8 : 0.25;
-    (this.warning as any).opacity = flash ? 1 : 0.4;
 
     if (elapsed >= TELEGRAPH_DURATION_MS) {
       for (const obj of t.objs) obj.destroy();
       this.spawnWall(t);
       this.telegraph = null;
       this.lastWallMs = nowMs;
+      this.wallCount += 1;
     }
   }
 
@@ -286,13 +401,8 @@ export class WallHazardSystem {
       for (const seg of w.segments) seg.destroy();
       for (const glow of w.glowSegments) glow.destroy();
       this.wall = null;
-      (this.warning as any).opacity = 0;
       return;
     }
-
-    // Flash HUD warning while wall sweeps
-    const flash = Math.sin(nowMs * 0.01) > 0;
-    (this.warning as any).opacity = flash ? 0.9 : 0.3;
 
     // Player-wall collision
     const px = this.player.obj.pos.x;
@@ -317,4 +427,17 @@ export class WallHazardSystem {
     this.damageFlash.flash();
     this.k.shake(6);
   }
+}
+
+/* ---- easing helpers ---- */
+
+function easeOutCubic(t: number): number {
+  const c = 1 - t;
+  return 1 - c * c * c;
+}
+
+function easeOutBack(t: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
