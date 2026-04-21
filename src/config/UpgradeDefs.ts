@@ -222,7 +222,7 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     id: "samuraiSword-cooldown",
     kind: "weapon-upgrade",
     label: "Iaido Stance",
-    description: "-12% samurai sword cooldown.",
+    description: "-15% samurai sword cooldown.",
     maxLevel: 3,
     icon: "weapon-katana",
     weapon: "samuraiSword",

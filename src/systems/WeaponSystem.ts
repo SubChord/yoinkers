@@ -15,6 +15,14 @@ const FIRE_TRAIL_LIFETIME_MS = 4000;
 const FIRE_TRAIL_DROP_DIST = 28;
 const FIRE_ARROW_BONUS_MULT = 1.5;
 
+const SAMURAI_SPREAD = Math.PI * 0.9;
+const SAMURAI_RADIUS = 52;
+const SAMURAI_REACH = 88;
+
+function samuraiSlashProgress(p: Projectile): number {
+  return Math.min(1, p.lifetimeMs > 0 ? p.elapsedMs / p.lifetimeMs : 0);
+}
+
 interface WeaponState {
   lastFireMs: number;
 }
@@ -130,15 +138,45 @@ export class WeaponSystem {
   }
 
   private updateSamuraiSlash(p: Projectile): void {
-    const t = Math.min(1, p.lifetimeMs > 0 ? p.elapsedMs / p.lifetimeMs : 0);
-    const spread = Math.PI * 0.9;
+    const t = samuraiSlashProgress(p);
+    const spread = SAMURAI_SPREAD;
     const baseAngle = Math.atan2(p.dir.y, p.dir.x);
     const angle = baseAngle - spread / 2 + spread * t;
-    const radius = 52;
+    const radius = SAMURAI_RADIUS;
     const playerPos = this.player.obj.pos;
     p.obj.pos.x = playerPos.x + Math.cos(angle) * radius;
     p.obj.pos.y = playerPos.y + Math.sin(angle) * radius;
     (p.obj as { angle?: number }).angle = (angle * 180) / Math.PI + 90;
+  }
+
+  private checkSamuraiSlashHits(p: Projectile): void {
+    // Swept-arc hit detection. Every enemy within the blade's reach and
+    // within the part of the arc the blade has already swept through takes
+    // one hit per swing (tracked via hitCooldownsMs).
+    const t = samuraiSlashProgress(p);
+    const baseAngle = Math.atan2(p.dir.y, p.dir.x);
+    const sweptFrom = -SAMURAI_SPREAD / 2;
+    const sweptTo = sweptFrom + SAMURAI_SPREAD * t;
+    const playerPos = this.player.obj.pos;
+
+    for (let i = this.spawner.enemies.length - 1; i >= 0; i -= 1) {
+      const enemy = this.spawner.enemies[i];
+      const key = enemyId(enemy);
+      if (p.hitCooldownsMs.has(key)) continue;
+
+      const dx = enemy.obj.pos.x - playerPos.x;
+      const dy = enemy.obj.pos.y - playerPos.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 4 || dist > SAMURAI_REACH + enemy.area) continue;
+
+      let rel = Math.atan2(dy, dx) - baseAngle;
+      while (rel > Math.PI) rel -= Math.PI * 2;
+      while (rel < -Math.PI) rel += Math.PI * 2;
+      if (rel < sweptFrom || rel > sweptTo) continue;
+
+      p.hitCooldownsMs.set(key, 1);
+      this.applyHit(p, i);
+    }
   }
 
   private fireSamuraiSlash(stats: WeaponStats): void {
@@ -149,13 +187,17 @@ export class WeaponSystem {
     const len = Math.hypot(rawDx, rawDy) || 1;
     const dir = this.k.vec2(rawDx / len, rawDy / len);
 
+    const startAngle = Math.atan2(dir.y, dir.x) - SAMURAI_SPREAD / 2;
+    const startX = p.x + Math.cos(startAngle) * SAMURAI_RADIUS;
+    const startY = p.y + Math.sin(startAngle) * SAMURAI_RADIUS;
+
     this.projectiles.push(
       spawnProjectile(this.k, {
         kind: "ground",
         weapon: "samuraiSword",
         sprite: WEAPON_DEFS.samuraiSword.spriteKey,
-        x: p.x + dir.x * 48,
-        y: p.y + dir.y * 48,
+        x: startX,
+        y: startY,
         dir,
         speed: 0,
         damage: stats.damage,
@@ -474,7 +516,7 @@ export class WeaponSystem {
         p.elapsedMs += dt * 1000;
         if (p.weapon === "samuraiSword") {
           this.updateSamuraiSlash(p);
-          this.checkPersistentHits(p, nowMs, 600);
+          this.checkSamuraiSlashHits(p);
         } else {
           const cooldown = p.weapon === "fireTrail" ? FIRE_TRAIL_HIT_COOLDOWN_MS : CALTROP_HIT_COOLDOWN_MS;
           this.checkPersistentHits(p, nowMs, cooldown);
