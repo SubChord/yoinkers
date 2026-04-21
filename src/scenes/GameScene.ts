@@ -262,10 +262,9 @@ export function registerGameScene(k: KAPLAYCtx): void {
         switch (player.stats.activeItem) {
           case "redBull": {
             const REDBULL_DURATION_MS = 2500;
-            const REDBULL_COOLDOWN_MS = 12000;
             player.stats.speedBuffMult = 2.2;
             player.stats.speedBuffExpiresMs = nowMs + REDBULL_DURATION_MS;
-            player.stats.activeItemCooldownMs = nowMs + REDBULL_COOLDOWN_MS;
+            player.stats.activeItem = null;
             playSfx(k, "sfx-levelup");
 
             burstVfx(k, {
@@ -302,8 +301,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
           case "novaBlast": {
             const NOVA_RADIUS = 200;
             const NOVA_DAMAGE = 250;
-            const NOVA_COOLDOWN_MS = 18000;
-            player.stats.activeItemCooldownMs = nowMs + NOVA_COOLDOWN_MS;
+            player.stats.activeItem = null;
             playSfx(k, "sfx-hit");
 
             for (let ring = 0; ring < 3; ring++) {
