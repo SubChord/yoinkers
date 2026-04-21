@@ -1,0 +1,21 @@
+{
+  "name": "yoinkers",
+  "version": "1.0.0",
+  "description": "Vampire Survivors style KAPLAY game",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^8.0.9"
+  },
+  "dependencies": {
+    "kaplay": "^3001.0.19"
+  }
+}

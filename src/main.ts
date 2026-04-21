@@ -1,0 +1,89 @@
+import kaplay from "kaplay";
+import { GAME_HEIGHT, GAME_WIDTH } from "./config/GameConfig";
+import { MUSIC_TRACKS } from "./config/MusicDefs";
+import { registerEndScene } from "./scenes/EndScene";
+import { registerGameScene } from "./scenes/GameScene";
+import { registerMenuScene } from "./scenes/MenuScene";
+
+const k = kaplay({
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT,
+  letterbox: true,
+  pixelDensity: 1,
+  crisp: true,
+  background: [16, 34, 24],
+  buttons: {
+    up: { keyboard: ["w", "up"] },
+    down: { keyboard: ["s", "down"] },
+    left: { keyboard: ["a", "left"] },
+    right: { keyboard: ["d", "right"] },
+  },
+});
+
+// NinjaAdventure 4x4 sheet. Rows: 0=down, 1=up, 2=left, 3=right.
+const PLAYER_ANIMS = {
+  "idle-down": 0,
+  "idle-up": 4,
+  "idle-left": 8,
+  "idle-right": 12,
+  "walk-down": { from: 0, to: 3, loop: true, speed: 8 },
+  "walk-up": { from: 4, to: 7, loop: true, speed: 8 },
+  "walk-left": { from: 8, to: 11, loop: true, speed: 8 },
+  "walk-right": { from: 12, to: 15, loop: true, speed: 8 },
+} as const;
+
+const ENEMY_ANIMS = {
+  "walk-down": { from: 0, to: 3, loop: true, speed: 6 },
+  "walk-up": { from: 4, to: 7, loop: true, speed: 6 },
+  "walk-left": { from: 8, to: 11, loop: true, speed: 6 },
+  "walk-right": { from: 12, to: 15, loop: true, speed: 6 },
+} as const;
+
+k.loadSprite("player-walk", "assets/Actor/Characters/NinjaGirl/Walk.png", {
+  sliceX: 4,
+  sliceY: 4,
+  anims: PLAYER_ANIMS,
+});
+
+k.loadSprite("enemy-slime", "assets/Actor/Monster/Slime/SpriteSheet.png", {
+  sliceX: 4,
+  sliceY: 4,
+  anims: ENEMY_ANIMS,
+});
+k.loadSprite("enemy-skel", "assets/Actor/Monster/SkullBlue/SpriteSheet.png", {
+  sliceX: 4,
+  sliceY: 4,
+  anims: ENEMY_ANIMS,
+});
+k.loadSprite("enemy-bat", "assets/Actor/Monster/BlueBat/SpriteSheet.png", {
+  sliceX: 4,
+  sliceY: 4,
+  anims: ENEMY_ANIMS,
+});
+
+k.loadSprite("gem", "assets/Items/Collectibles/gem.png");
+k.loadSprite("shuriken", "assets/Items/Weapon/shuriken-icon.png");
+k.loadSprite("magic-orb", "assets/Items/Weapon/magic-orb-blue.png", {
+  sliceX: 5,
+  sliceY: 1,
+  anims: {
+    spin: { from: 0, to: 4, loop: true, speed: 10 },
+  },
+});
+k.loadSprite("boomerang", "assets/Items/Weapon/kunai.png");
+k.loadSprite("chest", "assets/Items/Treasure/chest.png", { sliceX: 2, sliceY: 1 });
+k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
+
+for (const track of MUSIC_TRACKS) {
+  k.loadSound(track.soundKey, track.file);
+}
+k.loadSound("sfx-hit", "assets/Sounds/hit.wav");
+k.loadSound("sfx-death", "assets/Sounds/death.wav");
+k.loadSound("sfx-levelup", "assets/Sounds/levelup.wav");
+k.loadSound("sfx-gem", "assets/Sounds/gem.wav");
+
+registerMenuScene(k);
+registerGameScene(k);
+registerEndScene(k);
+
+k.go("menu");
