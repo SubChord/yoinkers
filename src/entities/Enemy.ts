@@ -5,12 +5,19 @@ import type { Player } from "./Player";
 export interface Enemy {
   obj: GameObj;
   hp: number;
+  maxHp: number;
   speed: number;
   damage: number;
   xpValue: number;
   area: number;
   typeId: EnemyId;
+  isBoss: boolean;
   facing: "left" | "right";
+}
+
+export interface SpawnOpts {
+  elite?: boolean;
+  waveScale?: number;
 }
 
 export function spawnEnemy(
@@ -18,26 +25,42 @@ export function spawnEnemy(
   defId: EnemyId,
   x: number,
   y: number,
-  scale: number,
+  opts: SpawnOpts = {},
 ): Enemy {
   const def: EnemyDef = ENEMY_DEFS[defId];
+  const waveScale = opts.waveScale ?? 1;
+  const eliteHp = opts.elite ? 2.2 : 1;
+  const eliteDmg = opts.elite ? 1.4 : 1;
+  const eliteSpeed = opts.elite ? 1.1 : 1;
+  const visualScale = 2 * def.scale * (opts.elite ? 1.15 : 1);
 
-  const obj = k.add([
+  const comps: Parameters<typeof k.add>[0] = [
     k.sprite(def.spriteKey, { frame: 0, anim: "walk-down" }),
     k.pos(x, y),
     k.anchor("center"),
-    k.scale(2),
-    k.z(5),
-  ]);
+    k.scale(visualScale),
+    k.z(def.boss ? 6 : 5),
+  ];
 
+  if (def.tint) {
+    comps.push(k.color(def.tint[0], def.tint[1], def.tint[2]));
+  } else if (opts.elite) {
+    comps.push(k.color(255, 150, 150));
+  }
+
+  const obj = k.add(comps);
+
+  const hp = Math.floor(def.hp * waveScale * eliteHp);
   return {
     obj,
-    hp: Math.floor(def.hp * scale),
-    speed: def.speed * scale,
-    damage: def.damage,
-    xpValue: def.xpValue,
+    hp,
+    maxHp: hp,
+    speed: def.speed * waveScale * eliteSpeed,
+    damage: Math.floor(def.damage * eliteDmg),
+    xpValue: Math.floor(def.xpValue * (opts.elite ? 1.8 : 1)),
     area: def.area,
     typeId: def.id,
+    isBoss: def.boss,
     facing: "right",
   };
 }
@@ -55,8 +78,7 @@ export function updateEnemy(enemy: Enemy, player: Player, dt: number): void {
   const nextFacing: "left" | "right" = nx < 0 ? "left" : "right";
   if (nextFacing !== enemy.facing) {
     enemy.facing = nextFacing;
-    const go = enemy.obj as GameObj & { flipX?: boolean };
-    go.flipX = nextFacing === "left";
+    (enemy.obj as GameObj & { flipX?: boolean }).flipX = nextFacing === "left";
   }
 
   const desired = Math.abs(ny) > Math.abs(nx)
