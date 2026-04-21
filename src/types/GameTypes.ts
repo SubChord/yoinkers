@@ -20,7 +20,7 @@ export interface PlayerStats {
   speedBuffExpiresMs: number;
   weapons: WeaponId[];
   upgrades: Record<string, number>;
-  gear: Partial<Record<GearId, number>>; 
+  gear: Partial<Record<GearId, number>>;
 }
 
 export interface EndStats {
