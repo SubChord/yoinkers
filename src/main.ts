@@ -8,6 +8,7 @@ import { registerGameScene } from "./scenes/GameScene";
 import { registerGuideScene } from "./scenes/GuideScene";
 import { registerMapSelectScene } from "./scenes/MapSelectScene";
 import { registerMenuScene } from "./scenes/MenuScene";
+import { registerShopScene } from "./scenes/ShopScene";
 import { registerStatsScene } from "./scenes/StatsScene";
 
 const k = kaplay({
@@ -116,5 +117,6 @@ registerEndScene(k);
 registerStatsScene(k);
 registerGuideScene(k);
 registerMapSelectScene(k);
+registerShopScene(k);
 
 k.go("menu");

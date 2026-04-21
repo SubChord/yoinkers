@@ -17,7 +17,7 @@ import { ItemSystem } from "../systems/ItemSystem";
 import { MusicSystem } from "../systems/MusicSystem";
 import { burstVfx } from "../systems/PickupVfx";
 import { QuestSystem } from "../systems/QuestSystem";
-import { persistRun } from "../systems/SaveStore";
+import { currentMetaBonuses, persistRun } from "../systems/SaveStore";
 import { StatsTracker } from "../systems/StatsTracker";
 import { WeaponSystem } from "../systems/WeaponSystem";
 import { applyUpgrade, pickUpgradeChoices } from "../systems/UpgradeSystem";
@@ -39,6 +39,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
     drawWorld(k, mapDef.palette);
 
     const player = createPlayer(k);
+    applyMetaBonuses(player);
     const spawner = new EnemySpawner(k, player);
     const gems: XpGem[] = [];
     const tracker = new StatsTracker();
@@ -348,4 +349,17 @@ function playSfx(k: KAPLAYCtx, key: string): void {
   } catch {
     // Audio may be locked until the user interacts; safe to ignore.
   }
+}
+
+function applyMetaBonuses(player: Player): void {
+  const b = currentMetaBonuses();
+  player.stats.maxHp += b.maxHpBonus;
+  player.stats.hp = player.stats.maxHp;
+  player.stats.regenPerSec += b.regenBonus;
+  player.stats.speed = Math.round(player.stats.speed * b.speedMult);
+  player.stats.damageMult *= b.damageMult;
+  player.stats.cooldownMult *= b.cooldownMult;
+  player.stats.magnetMult *= b.magnetMult;
+  player.stats.xpMult *= b.xpMult;
+  player.stats.level += b.startingLevel;
 }

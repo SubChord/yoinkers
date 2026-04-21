@@ -1,4 +1,11 @@
 import { MAP_DEFS, MAP_ORDER, type MapId } from "../config/MapDefs";
+import {
+  META_UPGRADE_DEFS,
+  META_UPGRADE_ORDER,
+  computeMetaBonuses,
+  type MetaBonuses,
+  type MetaUpgradeId,
+} from "../config/MetaUpgradeDefs";
 import type { EndStats } from "../types/GameTypes";
 
 const STORAGE_KEY = "yoinkers.save.v2";
@@ -18,6 +25,10 @@ export interface SaveData {
   unlockedMaps: MapId[];
   clearedMaps: MapId[];
   lastMapId: MapId;
+  yoinks: number;
+  lifetimeYoinks: number;
+  metaUpgrades: Partial<Record<MetaUpgradeId, number>>;
+  lastYoinksEarned: number;
 }
 
 const EMPTY_SAVE: SaveData = {
@@ -35,6 +46,10 @@ const EMPTY_SAVE: SaveData = {
   unlockedMaps: ["grove"],
   clearedMaps: [],
   lastMapId: "grove",
+  yoinks: 0,
+  lifetimeYoinks: 0,
+  metaUpgrades: {},
+  lastYoinksEarned: 0,
 };
 
 export function loadSave(): SaveData {
@@ -49,10 +64,73 @@ export function loadSave(): SaveData {
       unlockedMaps: sanitizeMaps(parsed.unlockedMaps, ["grove"]),
       clearedMaps: sanitizeMaps(parsed.clearedMaps, []),
       lastMapId: sanitizeMapId(parsed.lastMapId, "grove"),
+      yoinks: Math.max(0, Math.floor(parsed.yoinks ?? 0)),
+      lifetimeYoinks: Math.max(0, Math.floor(parsed.lifetimeYoinks ?? 0)),
+      metaUpgrades: sanitizeMetaUpgrades(parsed.metaUpgrades),
+      lastYoinksEarned: Math.max(0, Math.floor(parsed.lastYoinksEarned ?? 0)),
     };
   } catch {
     return cloneEmpty();
   }
+}
+
+export function computeYoinksEarned(stats: EndStats, runsPlayed: number, yoinkMult: number): number {
+  const secs = Math.floor(stats.timeSurvivedMs / 1000);
+  const base =
+    stats.enemiesKilled * 0.5 +
+    stats.wave * 4 +
+    stats.level * 6 +
+    secs * 0.3 +
+    stats.totalDamage / 400;
+  const winBonus = stats.won ? 150 : 0;
+  const veteranMult = 1 + Math.min(runsPlayed, 50) * 0.01;
+  return Math.max(1, Math.floor((base + winBonus) * veteranMult * yoinkMult));
+}
+
+export function currentMetaBonuses(save: SaveData = loadSave()): MetaBonuses {
+  return computeMetaBonuses(save.metaUpgrades);
+}
+
+export function purchaseMetaUpgrade(id: MetaUpgradeId, cost: number): SaveData {
+  const current = loadSave();
+  const def = META_UPGRADE_DEFS[id];
+  const level = current.metaUpgrades[id] ?? 0;
+  if (level >= def.maxLevel) return current;
+  if (current.yoinks < cost) return current;
+  const next: SaveData = {
+    ...current,
+    yoinks: current.yoinks - cost,
+    metaUpgrades: { ...current.metaUpgrades, [id]: level + 1 },
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+  return next;
+}
+
+export function refundMetaUpgrades(): SaveData {
+  const current = loadSave();
+  let refund = 0;
+  for (const id of META_UPGRADE_ORDER) {
+    const def = META_UPGRADE_DEFS[id];
+    const level = current.metaUpgrades[id] ?? 0;
+    for (let i = 0; i < level; i += 1) {
+      refund += Math.round(def.baseCost * Math.pow(def.costGrowth, i));
+    }
+  }
+  const next: SaveData = {
+    ...current,
+    yoinks: current.yoinks + refund,
+    metaUpgrades: {},
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+  return next;
 }
 
 export function persistRun(stats: EndStats, mapId: MapId): SaveData {
@@ -61,6 +139,8 @@ export function persistRun(stats: EndStats, mapId: MapId): SaveData {
     ? addUnique(current.clearedMaps, mapId)
     : current.clearedMaps;
   const unlockedMaps = stats.won ? unlockNextMaps(current.unlockedMaps, mapId) : current.unlockedMaps;
+  const bonuses = computeMetaBonuses(current.metaUpgrades);
+  const earned = computeYoinksEarned(stats, current.runsPlayed, bonuses.yoinkMult);
 
   const next: SaveData = {
     ...current,
@@ -78,6 +158,9 @@ export function persistRun(stats: EndStats, mapId: MapId): SaveData {
     unlockedMaps,
     clearedMaps,
     lastMapId: mapId,
+    yoinks: current.yoinks + earned,
+    lifetimeYoinks: current.lifetimeYoinks + earned,
+    lastYoinksEarned: earned,
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -112,7 +195,23 @@ function cloneEmpty(): SaveData {
     allTimeDamage: {},
     unlockedMaps: [...EMPTY_SAVE.unlockedMaps],
     clearedMaps: [],
+    metaUpgrades: {},
   };
+}
+
+function sanitizeMetaUpgrades(
+  value: Partial<Record<MetaUpgradeId, number>> | undefined,
+): Partial<Record<MetaUpgradeId, number>> {
+  if (!value || typeof value !== "object") return {};
+  const out: Partial<Record<MetaUpgradeId, number>> = {};
+  for (const id of META_UPGRADE_ORDER) {
+    const raw = value[id];
+    if (typeof raw === "number" && raw > 0) {
+      const def = META_UPGRADE_DEFS[id];
+      out[id] = Math.min(def.maxLevel, Math.floor(raw));
+    }
+  }
+  return out;
 }
 
 function unlockNextMaps(currentUnlocked: MapId[], justClearedMapId: MapId): MapId[] {

@@ -1,6 +1,7 @@
 import type { KAPLAYCtx } from "kaplay";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/GameConfig";
 import { WEAPON_DEFS, type WeaponId } from "../config/WeaponDefs";
+import { loadSave } from "../systems/SaveStore";
 import type { EndStats } from "../types/GameTypes";
 
 export function registerEndScene(k: KAPLAYCtx): void {
@@ -34,10 +35,33 @@ export function registerEndScene(k: KAPLAYCtx): void {
       k.fixed(),
     ]);
 
+    const save = loadSave();
+    k.add([
+      k.rect(360, 54, { radius: 10 }),
+      k.pos(GAME_WIDTH / 2 - 180, 152),
+      k.color(30, 40, 52),
+      k.outline(2, k.rgb(244, 220, 150)),
+      k.fixed(),
+    ]);
+    k.add([
+      k.text(`+${save.lastYoinksEarned.toLocaleString()} yoinks earned`, { size: 20 }),
+      k.anchor("center"),
+      k.pos(GAME_WIDTH / 2, 170),
+      k.color(255, 232, 140),
+      k.fixed(),
+    ]);
+    k.add([
+      k.text(`Total: ${save.yoinks.toLocaleString()} ¥`, { size: 14 }),
+      k.anchor("center"),
+      k.pos(GAME_WIDTH / 2, 192),
+      k.color(200, 216, 232),
+      k.fixed(),
+    ]);
+
     drawDamageBreakdown(k, data);
 
     const prompt = k.add([
-      k.text("Click or press SPACE / ENTER to return to menu", { size: 22 }),
+      k.text("Click or press SPACE / ENTER to return to menu  •  H for Shop", { size: 22 }),
       k.anchor("center"),
       k.pos(GAME_WIDTH / 2, GAME_HEIGHT - 40),
       k.color(255, 255, 255),
@@ -48,6 +72,7 @@ export function registerEndScene(k: KAPLAYCtx): void {
     k.onClick(restart);
     k.onKeyPress("space", restart);
     k.onKeyPress("enter", restart);
+    k.onKeyPress("h", () => k.go("shop"));
 
     prompt.onUpdate(() => {
       const pulse = 0.5 + Math.sin(k.time() * 4) * 0.5;
