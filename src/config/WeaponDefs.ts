@@ -6,7 +6,13 @@ export type WeaponId =
   | "bomb"
   | "caltrop"
   | "samuraiSword"
-  | "dualKatana";
+  | "dualKatana"
+  | "stormShuriken"
+  | "arcaneHalo"
+  | "warhammerKunai"
+  | "arrowHail"
+  | "megaBomb"
+  | "bloodspikes";
 
 export interface WeaponStats {
   damage: number;
@@ -81,6 +87,48 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     description: "Twin spinning blades orbit you, shredding everything in reach.",
     spriteKey: "weapon-katana",
     base: { damage: 26, cooldownMs: 0, speed: 0, range: 0, count: 2, area: 28 },
+  },
+  stormShuriken: {
+    id: "stormShuriken",
+    label: "Storm Shuriken",
+    description: "Wild triple-shuriken barrage, fires almost constantly.",
+    spriteKey: "shuriken",
+    base: { damage: 18, cooldownMs: 320, speed: 440, range: 440, count: 3, area: 24 },
+  },
+  arcaneHalo: {
+    id: "arcaneHalo",
+    label: "Arcane Halo",
+    description: "A wide ring of magic orbs spins around you at ferocious speed.",
+    spriteKey: "magic-orb",
+    base: { damage: 18, cooldownMs: 0, speed: 0, range: 0, count: 4, area: 34 },
+  },
+  warhammerKunai: {
+    id: "warhammerKunai",
+    label: "Warhammer Kunai",
+    description: "A massive kunai that hammers through crowds before returning.",
+    spriteKey: "boomerang",
+    base: { damage: 52, cooldownMs: 1400, speed: 360, range: 500, count: 1, area: 48 },
+  },
+  arrowHail: {
+    id: "arrowHail",
+    label: "Arrow Hail",
+    description: "Arrows rain out in every direction on a tight cooldown.",
+    spriteKey: "weapon-arrow",
+    base: { damage: 14, cooldownMs: 620, speed: 520, range: 440, count: 8, area: 20 },
+  },
+  megaBomb: {
+    id: "megaBomb",
+    label: "Mega Bomb",
+    description: "An enormous explosive with devastating blast radius.",
+    spriteKey: "weapon-bomb",
+    base: { damage: 110, cooldownMs: 1600, speed: 260, range: 300, count: 1, area: 140 },
+  },
+  bloodspikes: {
+    id: "bloodspikes",
+    label: "Blood Spikes",
+    description: "A thicket of vicious spikes covering the ground around you.",
+    spriteKey: "weapon-caltrop",
+    base: { damage: 14, cooldownMs: 2200, speed: 0, range: 160, count: 7, area: 28 },
   },
 };
 

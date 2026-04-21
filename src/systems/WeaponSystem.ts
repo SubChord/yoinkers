@@ -72,25 +72,44 @@ export class WeaponSystem {
       this.ensureOrbit("dualKatana", stats, { radius: 72, speed: 4.2, scale: 2.6 });
       return;
     }
+    if (weaponId === "arcaneHalo") {
+      this.ensureOrbit("arcaneHalo", stats, { radius: 96, speed: 3.6, scale: 2.2 });
+      return;
+    }
 
     if (nowMs - state.lastFireMs < stats.cooldownMs) return;
     state.lastFireMs = nowMs;
 
     switch (weaponId) {
       case "shuriken":
-        this.fireShuriken(stats);
+        this.fireShuriken(stats, "shuriken");
+        break;
+      case "stormShuriken":
+        this.fireShuriken(stats, "stormShuriken");
         break;
       case "boomerang":
-        this.fireBoomerang(stats);
+        this.fireBoomerang(stats, "boomerang");
+        break;
+      case "warhammerKunai":
+        this.fireBoomerang(stats, "warhammerKunai");
         break;
       case "arrow":
-        this.fireArrow(stats);
+        this.fireArrow(stats, "arrow");
+        break;
+      case "arrowHail":
+        this.fireArrowHail(stats);
         break;
       case "bomb":
-        this.fireBomb(stats);
+        this.fireBomb(stats, "bomb");
+        break;
+      case "megaBomb":
+        this.fireBomb(stats, "megaBomb");
         break;
       case "caltrop":
-        this.dropCaltrops(stats, nowMs);
+        this.dropCaltrops(stats, nowMs, "caltrop");
+        break;
+      case "bloodspikes":
+        this.dropCaltrops(stats, nowMs, "bloodspikes");
         break;
       case "samuraiSword":
         this.fireSamuraiSlash(stats);
@@ -125,7 +144,7 @@ export class WeaponSystem {
     );
   }
 
-  private fireShuriken(stats: WeaponStats): void {
+  private fireShuriken(stats: WeaponStats, weapon: WeaponId): void {
     const target = this.spawner.nearest(this.player.obj.pos.x, this.player.obj.pos.y);
     if (!target) return;
     const baseDir = this.k
@@ -140,8 +159,8 @@ export class WeaponSystem {
       this.projectiles.push(
         spawnProjectile(this.k, {
           kind: "linear",
-          weapon: "shuriken",
-          sprite: WEAPON_DEFS.shuriken.spriteKey,
+          weapon,
+          sprite: WEAPON_DEFS[weapon].spriteKey,
           x: this.player.obj.pos.x,
           y: this.player.obj.pos.y,
           dir,
@@ -154,7 +173,7 @@ export class WeaponSystem {
     }
   }
 
-  private fireBoomerang(stats: WeaponStats): void {
+  private fireBoomerang(stats: WeaponStats, weapon: WeaponId): void {
     const target = this.spawner.nearest(this.player.obj.pos.x, this.player.obj.pos.y);
     const baseDir = target
       ? this.k
@@ -166,14 +185,15 @@ export class WeaponSystem {
       : this.k.vec2(1, 0);
 
     const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    const scale = weapon === "warhammerKunai" ? 2.4 : 1;
     for (let i = 0; i < stats.count; i += 1) {
       const angle = baseAngle + (i - (stats.count - 1) / 2) * 0.6;
       const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
       this.projectiles.push(
         spawnProjectile(this.k, {
           kind: "boomerang",
-          weapon: "boomerang",
-          sprite: WEAPON_DEFS.boomerang.spriteKey,
+          weapon,
+          sprite: WEAPON_DEFS[weapon].spriteKey,
           x: this.player.obj.pos.x,
           y: this.player.obj.pos.y,
           dir,
@@ -181,12 +201,13 @@ export class WeaponSystem {
           damage: stats.damage,
           area: stats.area,
           maxRange: stats.range,
+          scale,
         }),
       );
     }
   }
 
-  private fireArrow(stats: WeaponStats): void {
+  private fireArrow(stats: WeaponStats, weapon: WeaponId): void {
     const target = this.spawner.nearest(this.player.obj.pos.x, this.player.obj.pos.y);
     const baseDir = target
       ? this.k
@@ -206,8 +227,8 @@ export class WeaponSystem {
       this.projectiles.push(
         spawnProjectile(this.k, {
           kind: "pierce",
-          weapon: "arrow",
-          sprite: WEAPON_DEFS.arrow.spriteKey,
+          weapon,
+          sprite: WEAPON_DEFS[weapon].spriteKey,
           x: this.player.obj.pos.x,
           y: this.player.obj.pos.y,
           dir,
@@ -222,7 +243,32 @@ export class WeaponSystem {
     }
   }
 
-  private fireBomb(stats: WeaponStats): void {
+  private fireArrowHail(stats: WeaponStats): void {
+    const pierceLevel = this.player.stats.upgrades["arrow-pierce"] ?? 0;
+    const count = Math.max(8, stats.count);
+    for (let i = 0; i < count; i += 1) {
+      const angle = (Math.PI * 2 * i) / count;
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
+      this.projectiles.push(
+        spawnProjectile(this.k, {
+          kind: "pierce",
+          weapon: "arrowHail",
+          sprite: WEAPON_DEFS.arrowHail.spriteKey,
+          x: this.player.obj.pos.x,
+          y: this.player.obj.pos.y,
+          dir,
+          speed: stats.speed,
+          damage: stats.damage,
+          area: stats.area,
+          maxRange: stats.range,
+          piercesLeft: 3 + pierceLevel,
+          rotationOffset: 45,
+        }),
+      );
+    }
+  }
+
+  private fireBomb(stats: WeaponStats, weapon: WeaponId): void {
     const target = this.spawner.nearest(this.player.obj.pos.x, this.player.obj.pos.y);
     const baseDir = target
       ? this.k
@@ -234,14 +280,15 @@ export class WeaponSystem {
       : this.k.vec2(1, 0);
 
     const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    const scale = weapon === "megaBomb" ? 4 : 2.5;
     for (let i = 0; i < stats.count; i += 1) {
       const angle = baseAngle + (i - (stats.count - 1) / 2) * 0.3;
       const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
       this.projectiles.push(
         spawnProjectile(this.k, {
           kind: "bomb",
-          weapon: "bomb",
-          sprite: WEAPON_DEFS.bomb.spriteKey,
+          weapon,
+          sprite: WEAPON_DEFS[weapon].spriteKey,
           x: this.player.obj.pos.x,
           y: this.player.obj.pos.y,
           dir,
@@ -249,13 +296,15 @@ export class WeaponSystem {
           damage: stats.damage,
           area: stats.area,
           maxRange: stats.range,
-          scale: 2.5,
+          scale,
         }),
       );
     }
   }
 
-  private dropCaltrops(stats: WeaponStats, nowMs: number): void {
+  private dropCaltrops(stats: WeaponStats, nowMs: number, weapon: WeaponId): void {
+    const lifetime = weapon === "bloodspikes" ? CALTROP_LIFETIME_MS * 1.5 : CALTROP_LIFETIME_MS;
+    const scale = weapon === "bloodspikes" ? 1.6 : 1;
     for (let i = 0; i < stats.count; i += 1) {
       const angle = (Math.PI * 2 * i) / stats.count + this.k.rand(-0.3, 0.3);
       const distance = this.k.rand(stats.range * 0.4, stats.range);
@@ -264,8 +313,8 @@ export class WeaponSystem {
       this.projectiles.push(
         spawnProjectile(this.k, {
           kind: "ground",
-          weapon: "caltrop",
-          sprite: WEAPON_DEFS.caltrop.spriteKey,
+          weapon,
+          sprite: WEAPON_DEFS[weapon].spriteKey,
           x,
           y,
           dir: this.k.vec2(1, 0),
@@ -273,7 +322,8 @@ export class WeaponSystem {
           damage: stats.damage,
           area: stats.area,
           maxRange: 0,
-          lifetimeMs: CALTROP_LIFETIME_MS,
+          lifetimeMs: lifetime,
+          scale,
         }),
       );
     }
@@ -552,5 +602,11 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "caltrop": return 4;
     case "samuraiSword": return 10;
     case "dualKatana": return 8;
+    case "stormShuriken": return 6;
+    case "arcaneHalo": return 5;
+    case "warhammerKunai": return 14;
+    case "arrowHail": return 5;
+    case "megaBomb": return 28;
+    case "bloodspikes": return 5;
   }
 }

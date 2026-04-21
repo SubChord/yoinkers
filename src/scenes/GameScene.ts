@@ -6,7 +6,9 @@ import {
   WORLD_SIZE,
   XP_PER_LEVEL,
 } from "../config/GameConfig";
+import type { GearId } from "../config/GearDefs";
 import { MAP_DEFS, type MapId } from "../config/MapDefs";
+import type { WeaponId } from "../config/WeaponDefs";
 import { createPlayer, updatePlayer, type Player } from "../entities/Player";
 import { scatterScenery } from "../entities/Scenery";
 import { updateGem, spawnXpGem, type XpGem } from "../entities/XpGem";
@@ -161,30 +163,31 @@ export function registerGameScene(k: KAPLAYCtx): void {
     });
     k.onKeyPress("p", () => togglePause());
 
-    let dualKatanaAnnounced = false;
+    const announced = new Set<string>();
     const checkEvolutions = () => {
-      if (
-        !dualKatanaAnnounced &&
-        player.stats.weapons.includes("samuraiSword") &&
-        (player.stats.gear["sai"] ?? 0) >= 1
-      ) {
-        dualKatanaAnnounced = true;
+      for (const evo of WEAPON_EVOLUTIONS) {
+        if (announced.has(evo.to)) continue;
+        if (!player.stats.weapons.includes(evo.from)) continue;
+        if ((player.stats.gear[evo.gear] ?? 0) < 1) continue;
+
+        announced.add(evo.to);
         state.paused = true;
         playSfx(k, "sfx-yoink");
         playSfx(k, "sfx-levelup");
-        const idx = player.stats.weapons.indexOf("samuraiSword");
+        const idx = player.stats.weapons.indexOf(evo.from);
         if (idx >= 0) player.stats.weapons.splice(idx, 1);
-        if (!player.stats.weapons.includes("dualKatana")) {
-          player.stats.weapons.push("dualKatana");
+        if (!player.stats.weapons.includes(evo.to)) {
+          player.stats.weapons.push(evo.to);
         }
         showEvolutionPopup(k, {
-          title: "Dual Spinning Samurai Sword",
-          subtitle: "Samurai Sword + Twin Sai combine into whirling twin blades!",
-          spriteKey: "weapon-katana",
+          title: evo.title,
+          subtitle: evo.subtitle,
+          spriteKey: evo.spriteKey,
           onDone: () => {
             state.paused = false;
           },
         });
+        return;
       }
     };
 
@@ -387,6 +390,74 @@ function playSfx(k: KAPLAYCtx, key: string): void {
     // Audio may be locked until the user interacts; safe to ignore.
   }
 }
+
+interface WeaponEvolution {
+  from: WeaponId;
+  gear: GearId;
+  to: WeaponId;
+  title: string;
+  subtitle: string;
+  spriteKey: string;
+}
+
+const WEAPON_EVOLUTIONS: WeaponEvolution[] = [
+  {
+    from: "samuraiSword",
+    gear: "sai",
+    to: "dualKatana",
+    title: "Dual Spinning Samurai Sword",
+    subtitle: "Samurai Sword + Twin Sai combine into whirling twin blades!",
+    spriteKey: "weapon-katana",
+  },
+  {
+    from: "shuriken",
+    gear: "feather",
+    to: "stormShuriken",
+    title: "Storm Shuriken",
+    subtitle: "Shuriken + Feather of Swiftness become a relentless triple-volley!",
+    spriteKey: "shuriken",
+  },
+  {
+    from: "magicOrb",
+    gear: "book",
+    to: "arcaneHalo",
+    title: "Arcane Halo",
+    subtitle: "Magic Orb + Book of Wisdom awaken a wide ring of spinning orbs!",
+    spriteKey: "magic-orb",
+  },
+  {
+    from: "boomerang",
+    gear: "hammer",
+    to: "warhammerKunai",
+    title: "Warhammer Kunai",
+    subtitle: "Kunai + Hammer of Might forge a crushing, oversized blade!",
+    spriteKey: "boomerang",
+  },
+  {
+    from: "arrow",
+    gear: "hourglass",
+    to: "arrowHail",
+    title: "Arrow Hail",
+    subtitle: "Arrow Volley + Hourglass of Haste pour arrows out in every direction!",
+    spriteKey: "weapon-arrow",
+  },
+  {
+    from: "bomb",
+    gear: "amulet",
+    to: "megaBomb",
+    title: "Mega Bomb",
+    subtitle: "Bomb + Amulet of Vitality swell into a colossal blast!",
+    spriteKey: "weapon-bomb",
+  },
+  {
+    from: "caltrop",
+    gear: "bag",
+    to: "bloodspikes",
+    title: "Blood Spikes",
+    subtitle: "Caltrops + Bag of Yoinking bloom into a lethal thicket of spikes!",
+    spriteKey: "weapon-caltrop",
+  },
+];
 
 function applyMetaBonuses(player: Player): number {
   const b = currentMetaBonuses();
