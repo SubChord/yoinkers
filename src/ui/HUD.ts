@@ -6,7 +6,7 @@ import type { ActiveItemId } from "../types/GameTypes";
 
 const ACTIVE_ITEM_LABELS: Record<ActiveItemId, string> = {
   redBull: "Red Bull",
-  novaBlast: "Allahu akbar",
+  novaBlast: "Nova Blast",
 };
 
 interface GearIconRef {

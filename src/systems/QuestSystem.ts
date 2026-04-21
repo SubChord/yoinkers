@@ -1,8 +1,7 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
 import { GAME_HEIGHT } from "../config/GameConfig";
-import { weightedRandomGear, applyGearStack } from "../config/GearDefs";
+import { weightedRandomGear, type GearId } from "../config/GearDefs";
 import { QUEST_DEFS, type QuestDef, type QuestMetric, type QuestReward } from "../config/QuestDefs";
-import { spawnGear } from "../entities/Gear";
 import type { Player } from "../entities/Player";
 
 const ACTIVE_SLOTS = 3;
@@ -35,6 +34,7 @@ export class QuestSystem {
     private k: KAPLAYCtx,
     private player: Player,
     private onPlaySfx: (key: string) => void,
+    private onSpawnGearReward: (id: GearId, x: number, y: number) => void = () => {},
   ) {
     this.pool = shuffle(k, [...QUEST_DEFS]);
     for (let i = 0; i < ACTIVE_SLOTS && this.pool.length > 0; i += 1) {
@@ -134,10 +134,8 @@ export class QuestSystem {
         break;
       case "gear": {
         const id = weightedRandomGear(() => this.k.rand(0, 1));
-        applyGearStack(this.player, id);
-        stats.gear[id] = (stats.gear[id] ?? 0) + 1;
         const p = this.player.obj.pos;
-        spawnGear(this.k, id, p.x + this.k.rand(-10, 10), p.y - 40);
+        this.onSpawnGearReward(id, p.x + this.k.rand(-10, 10), p.y - 40);
         break;
       }
     }

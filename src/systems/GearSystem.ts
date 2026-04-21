@@ -59,9 +59,9 @@ export class GearSystem {
     }
   }
 
-  private dropAt(x: number, y: number): void {
-    const id = weightedRandomGear(() => this.k.rand(0, 1));
-    this.drops.push(spawnGear(this.k, id, x, y));
+  public dropAt(x: number, y: number, id?: GearId): void {
+    const chosen = id ?? weightedRandomGear(() => this.k.rand(0, 1));
+    this.drops.push(spawnGear(this.k, chosen, x, y));
   }
 
   private spawnWorldDrop(): void {

@@ -12,7 +12,7 @@ import type { WeaponId } from "../config/WeaponDefs";
 import { createPlayer, updatePlayer, type Player } from "../entities/Player";
 import { scatterScenery } from "../entities/Scenery";
 import { updateGem, spawnXpGem, type XpGem } from "../entities/XpGem";
-import { playDeathAnim } from "../entities/Enemy";
+import { playDeathAnim, type Enemy } from "../entities/Enemy";
 import { ChestSystem } from "../systems/ChestSystem";
 import { EnemySpawner } from "../systems/EnemySpawner";
 import { GearSystem } from "../systems/GearSystem";
@@ -49,31 +49,38 @@ export function registerGameScene(k: KAPLAYCtx): void {
     const spawner = new EnemySpawner(k, player);
     const gems: XpGem[] = [];
     const tracker = new StatsTracker();
-    const quests = new QuestSystem(k, player, (key) => playSfx(k, key));
     const gear = new GearSystem(k, player, (key) => playSfx(k, key));
+    const quests = new QuestSystem(
+      k,
+      player,
+      (key) => playSfx(k, key),
+      (id, x, y) => gear.dropAt(x, y, id),
+    );
+    const handleKill = (enemy: Enemy, index: number) => {
+      gems.push(spawnXpGem(k, enemy.obj.pos.x, enemy.obj.pos.y, enemy.xpValue));
+      items.onEnemyKilled(enemy, enemy.isElite);
+      gear.onEnemyKilled(enemy);
+      quests.onKill(enemy.isElite, enemy.isBoss);
+      if (enemy.isBoss) playSfx(k, "sfx-yoink");
+      playDeathAnim(k, enemy);
+      spawner.removeAt(index);
+      state.enemiesKilled += 1;
+      playSfx(k, "sfx-death");
+    };
     const items = new ItemSystem(
       k,
       player,
       spawner,
       (key) => playSfx(k, key),
       () => quests.onItem(),
+      (enemy, index) => handleKill(enemy, index),
     );
 
     const weapons = new WeaponSystem(
       k,
       player,
       spawner,
-      (enemy, index) => {
-        gems.push(spawnXpGem(k, enemy.obj.pos.x, enemy.obj.pos.y, enemy.xpValue));
-        items.onEnemyKilled(enemy, enemy.isElite);
-        gear.onEnemyKilled(enemy);
-        quests.onKill(enemy.isElite, enemy.isBoss);
-        if (enemy.isBoss) playSfx(k, "sfx-yoink");
-        playDeathAnim(k, enemy);
-        spawner.removeAt(index);
-        state.enemiesKilled += 1;
-        playSfx(k, "sfx-death");
-      },
+      (enemy, index) => handleKill(enemy, index),
       () => playSfx(k, "sfx-hit"),
       tracker,
       (amount) => quests.onDamage(amount),
