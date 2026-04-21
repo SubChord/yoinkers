@@ -67,6 +67,15 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     icon: "weapon-katana",
     weapon: "samuraiSword",
   },
+  {
+    id: "unlock-fireTrail",
+    kind: "weapon-unlock",
+    label: "Fire Trail",
+    description: "Leave a trail of scorched earth that burns enemies who walk on it.",
+    maxLevel: 1,
+    icon: "fire-trail",
+    weapon: "fireTrail",
+  },
 
   {
     id: "shuriken-damage",
@@ -236,6 +245,24 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     icon: "weapon-katana",
     weapon: "dualKatana",
   },
+  {
+    id: "fireTrail-damage",
+    kind: "weapon-upgrade",
+    label: "Hotter Flames",
+    description: "+5 fire trail burn damage.",
+    maxLevel: 5,
+    icon: "fire-trail",
+    weapon: "fireTrail",
+  },
+  {
+    id: "fireTrail-area",
+    kind: "weapon-upgrade",
+    label: "Wider Blaze",
+    description: "+20% fire trail area.",
+    maxLevel: 3,
+    icon: "fire-trail",
+    weapon: "fireTrail",
+  },
 
   {
     id: "boost-speed",
@@ -284,6 +311,14 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
     description: "-8% cooldown on all weapons.",
     maxLevel: 4,
     icon: "gear-hourglass",
+  },
+  {
+    id: "unlock-redBull",
+    kind: "boost",
+    label: "Red Bull",
+    description: "Press SPACE for a 2.5s mega speed boost. 12s cooldown.",
+    maxLevel: 1,
+    icon: "item-redbull",
   },
 ];
 

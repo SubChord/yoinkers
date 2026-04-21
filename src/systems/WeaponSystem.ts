@@ -4,11 +4,16 @@ import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { spawnProjectile, type Projectile } from "../entities/Projectile";
 import type { EnemySpawner } from "./EnemySpawner";
+import { impactVfx } from "./PickupVfx";
 import type { StatsTracker } from "./StatsTracker";
 
 const MAGIC_ORB_HIT_COOLDOWN_MS = 500;
 const CALTROP_HIT_COOLDOWN_MS = 400;
 const CALTROP_LIFETIME_MS = 6000;
+const FIRE_TRAIL_HIT_COOLDOWN_MS = 300;
+const FIRE_TRAIL_LIFETIME_MS = 4000;
+const FIRE_TRAIL_DROP_DIST = 28;
+const FIRE_ARROW_BONUS_MULT = 1.5;
 
 interface WeaponState {
   lastFireMs: number;
@@ -17,6 +22,8 @@ interface WeaponState {
 export class WeaponSystem {
   public projectiles: Projectile[] = [];
   private weaponStates: Map<WeaponId, WeaponState> = new Map();
+  private lastFireDropX = 0;
+  private lastFireDropY = 0;
 
   constructor(
     private k: KAPLAYCtx,
@@ -74,6 +81,11 @@ export class WeaponSystem {
     }
     if (weaponId === "arcaneHalo") {
       this.ensureOrbit("arcaneHalo", stats, { radius: 96, speed: 3.6, scale: 2.2 });
+      return;
+    }
+
+    if (weaponId === "fireTrail") {
+      this.dropFireTrail(stats);
       return;
     }
 
@@ -231,26 +243,36 @@ export class WeaponSystem {
     const baseAngle = Math.atan2(baseDir.y, baseDir.x);
     const pierceLevel = this.player.stats.upgrades["arrow-pierce"] ?? 0;
 
+    const hasFireSynergy =
+      this.player.stats.weapons.includes("fireTrail") && pierceLevel > 0;
+    const damage = hasFireSynergy
+      ? stats.damage * FIRE_ARROW_BONUS_MULT
+      : stats.damage;
+
     for (let i = 0; i < stats.count; i += 1) {
       const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.12;
       const angle = baseAngle + offset;
       const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
-      this.projectiles.push(
-        spawnProjectile(this.k, {
-          kind: "pierce",
-          weapon,
-          sprite: WEAPON_DEFS[weapon].spriteKey,
-          x: this.player.obj.pos.x,
-          y: this.player.obj.pos.y,
-          dir,
-          speed: stats.speed,
-          damage: stats.damage,
-          area: stats.area,
-          maxRange: stats.range,
-          piercesLeft: 2 + pierceLevel,
-          rotationOffset: 45,
-        }),
-      );
+      const proj = spawnProjectile(this.k, {
+        kind: "pierce",
+        weapon,
+        sprite: WEAPON_DEFS[weapon].spriteKey,
+        x: this.player.obj.pos.x,
+        y: this.player.obj.pos.y,
+        dir,
+        speed: stats.speed,
+        damage,
+        area: stats.area,
+        maxRange: stats.range,
+        piercesLeft: 2 + pierceLevel,
+        rotationOffset: 45,
+      });
+
+      if (hasFireSynergy) {
+        proj.obj.color = this.k.rgb(255, 140, 30);
+      }
+
+      this.projectiles.push(proj);
     }
   }
 
@@ -341,6 +363,54 @@ export class WeaponSystem {
     void nowMs;
   }
 
+  private dropFireTrail(stats: WeaponStats): void {
+    const px = this.player.obj.pos.x;
+    const py = this.player.obj.pos.y;
+    const dx = px - this.lastFireDropX;
+    const dy = py - this.lastFireDropY;
+    if (dx * dx + dy * dy < FIRE_TRAIL_DROP_DIST * FIRE_TRAIL_DROP_DIST) return;
+
+    this.lastFireDropX = px;
+    this.lastFireDropY = py;
+
+    const areaLevel = this.player.stats.upgrades["fireTrail-area"] ?? 0;
+    const area = stats.area * Math.pow(1.2, areaLevel);
+    const scale = 0.9 + areaLevel * 0.15;
+
+    const obj = this.k.add([
+      this.k.sprite("fire-ground"),
+      this.k.pos(px, py),
+      this.k.anchor("center"),
+      this.k.scale(scale),
+      this.k.opacity(0.85),
+      this.k.z(2),
+    ]);
+
+    const proj: Projectile = {
+      obj,
+      kind: "ground",
+      weapon: "fireTrail",
+      dir: this.k.vec2(0, 0),
+      speed: 0,
+      damage: stats.damage,
+      area,
+      distance: 0,
+      maxRange: 0,
+      returning: false,
+      originX: px,
+      originY: py,
+      orbitAngle: 0,
+      orbitRadius: 0,
+      orbitSpeed: 0,
+      piercesLeft: 0,
+      lifetimeMs: FIRE_TRAIL_LIFETIME_MS,
+      elapsedMs: 0,
+      rotationOffset: 0,
+      hitCooldownsMs: new Map(),
+    };
+    this.projectiles.push(proj);
+  }
+
   private ensureOrbit(
     weaponId: WeaponId,
     stats: WeaponStats,
@@ -406,8 +476,16 @@ export class WeaponSystem {
           this.updateSamuraiSlash(p);
           this.checkPersistentHits(p, nowMs, 600);
         } else {
-          this.checkPersistentHits(p, nowMs, CALTROP_HIT_COOLDOWN_MS);
+          const cooldown = p.weapon === "fireTrail" ? FIRE_TRAIL_HIT_COOLDOWN_MS : CALTROP_HIT_COOLDOWN_MS;
+          this.checkPersistentHits(p, nowMs, cooldown);
         }
+
+        if (p.weapon === "fireTrail") {
+          const lifeRatio = p.elapsedMs / (p.lifetimeMs || 1);
+          const flicker = 0.6 + 0.25 * Math.sin(nowMs * 0.012 + p.originX);
+          p.obj.opacity = flicker * (1 - lifeRatio * 0.7);
+        }
+
         if (p.lifetimeMs > 0 && p.elapsedMs >= p.lifetimeMs) {
           p.obj.destroy();
           this.projectiles.splice(i, 1);
@@ -485,7 +563,16 @@ export class WeaponSystem {
     enemy.hp -= p.damage;
     this.stats.record(p.weapon, damage);
     this.onDamageDealt(damage);
-    if (enemy.hp <= 0) {
+    const killed = enemy.hp <= 0;
+
+    impactVfx(this.k, {
+      x: enemy.obj.pos.x,
+      y: enemy.obj.pos.y,
+      color: WEAPON_HIT_COLORS[p.weapon] ?? [255, 255, 255],
+      kill: killed,
+    });
+
+    if (killed) {
       this.onEnemyDeath(enemy, enemyIndex);
     } else {
       this.onEnemyHit();
@@ -597,6 +684,16 @@ export class WeaponSystem {
   }
 }
 
+const WEAPON_HIT_COLORS: Partial<Record<WeaponId, [number, number, number]>> = {
+  shuriken: [220, 220, 255],
+  magicOrb: [100, 160, 255],
+  boomerang: [200, 200, 200],
+  arrow: [255, 240, 180],
+  bomb: [255, 160, 60],
+  caltrop: [180, 220, 180],
+  fireTrail: [255, 100, 20],
+};
+
 function enemyId(enemy: Enemy): number {
   const obj = enemy.obj as unknown as { id?: number };
   return obj.id ?? 0;
@@ -618,5 +715,6 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "arrowHail": return 5;
     case "megaBomb": return 28;
     case "bloodspikes": return 5;
+    case "fireTrail": return 5;
   }
 }

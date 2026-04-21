@@ -1,7 +1,7 @@
 import type { KAPLAYCtx } from "kaplay";
 import { WORLD_SIZE } from "../config/GameConfig";
 import { ITEM_DEFS, weightedRandomItem, type ItemDef, type ItemId } from "../config/ItemDefs";
-import type { Enemy } from "../entities/Enemy";
+import { playDeathAnim, type Enemy } from "../entities/Enemy";
 import { spawnItem, updateItem, type Item } from "../entities/Item";
 import type { Player } from "../entities/Player";
 import type { EnemySpawner } from "./EnemySpawner";
@@ -133,7 +133,7 @@ export class ItemSystem {
       const enemy = this.spawner.enemies[i];
       enemy.hp -= damage;
       if (enemy.hp <= 0) {
-        enemy.obj.destroy();
+        playDeathAnim(this.k, enemy);
         this.spawner.removeAt(i);
       }
     }

@@ -91,8 +91,11 @@ k.loadSprite("weapon-arrow", "assets/Items/Weapon/arrow.png");
 k.loadSprite("weapon-bomb", "assets/Items/Weapon/bomb.png");
 k.loadSprite("weapon-caltrop", "assets/Items/Weapon/caltrop.png");
 k.loadSprite("weapon-katana", "assets/Items/Weapon/katana.png");
+k.loadSprite("fire-trail", "assets/Items/Weapon/fire-trail.png");
+k.loadSprite("fire-ground", "assets/Items/Weapon/fire-ground.png");
 k.loadSprite("chest", "assets/Items/Treasure/chest.png", { sliceX: 2, sliceY: 1 });
 k.loadSprite("heart", "assets/HUD/HeartsAnimation.png");
+k.loadSprite("item-redbull", "assets/Items/Consumables/redbull.png");
 
 for (const item of Object.values(ITEM_DEFS)) {
   k.loadSprite(item.spriteKey, `assets/Items/Consumables/${item.id}.png`);

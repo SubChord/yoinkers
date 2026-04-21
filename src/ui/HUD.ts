@@ -18,6 +18,8 @@ export interface HudRefs {
   scoreText: GameObj;
   weaponsText: GameObj;
   gearIcons: Map<GearId, GearIconRef>;
+  redBullIcon: GameObj;
+  redBullText: GameObj;
 }
 
 export function createHud(k: KAPLAYCtx): HudRefs {
@@ -61,7 +63,24 @@ export function createHud(k: KAPLAYCtx): HudRefs {
     gearIcons.set(id, { id, sprite, count });
   });
 
-  return { k, hpText, xpText, waveText, timerText, scoreText, weaponsText, gearIcons };
+  // Red Bull cooldown indicator (hidden until unlocked)
+  const redBullIcon = k.add([
+    k.sprite("item-redbull"),
+    k.pos(GAME_WIDTH - 220, 54),
+    k.scale(2),
+    k.opacity(0),
+    k.fixed(),
+    k.z(100),
+  ]);
+  const redBullText = k.add([
+    k.text("", { size: 16 }),
+    k.pos(GAME_WIDTH - 186, 58),
+    k.color(255, 220, 40),
+    k.fixed(),
+    k.z(100),
+  ]);
+
+  return { k, hpText, xpText, waveText, timerText, scoreText, weaponsText, gearIcons, redBullIcon, redBullText };
 }
 
 export interface HudState {
@@ -98,6 +117,28 @@ export function updateHud(refs: HudRefs, state: HudState): void {
     (icon.sprite as unknown as { opacity: number }).opacity = count > 0 ? 1 : 0.15;
     setText(icon.count, count > 1 ? `x${count}` : count === 1 ? "" : "");
   }
+
+  // Red Bull cooldown
+  if (s.hasRedBull) {
+    (refs.redBullIcon as unknown as { opacity: number }).opacity = 1;
+    const now = Date.now();
+    const cooldownLeft = Math.max(0, s.redBullCooldownMs - now);
+    const isActive = s.speedBuffExpiresMs > now && s.speedBuffMult > 1.5;
+    if (isActive) {
+      const activeLeft = Math.ceil((s.speedBuffExpiresMs - now) / 1000 * 10) / 10;
+      setText(refs.redBullText, `BOOST! ${activeLeft.toFixed(1)}s`);
+      (refs.redBullText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
+        refs.k.rgb(255, 255, 100);
+    } else if (cooldownLeft > 0) {
+      setText(refs.redBullText, `[SPACE] ${Math.ceil(cooldownLeft / 1000)}s`);
+      (refs.redBullText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
+        refs.k.rgb(160, 160, 160);
+    } else {
+      setText(refs.redBullText, "[SPACE] Ready!");
+      (refs.redBullText as unknown as { color: ReturnType<KAPLAYCtx["rgb"]> }).color =
+        refs.k.rgb(255, 220, 40);
+    }
+  }
 }
 
 function setText(obj: GameObj, value: string): void {
@@ -118,6 +159,8 @@ function prettyWeapon(id: string): string {
       return "Bomb";
     case "caltrop":
       return "Caltrops";
+    case "fireTrail":
+      return "Fire Trail";
     default:
       return id;
   }

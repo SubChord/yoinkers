@@ -12,6 +12,7 @@ import type { WeaponId } from "../config/WeaponDefs";
 import { createPlayer, updatePlayer, type Player } from "../entities/Player";
 import { scatterScenery } from "../entities/Scenery";
 import { updateGem, spawnXpGem, type XpGem } from "../entities/XpGem";
+import { playDeathAnim } from "../entities/Enemy";
 import { ChestSystem } from "../systems/ChestSystem";
 import { EnemySpawner } from "../systems/EnemySpawner";
 import { GearSystem } from "../systems/GearSystem";
@@ -66,7 +67,7 @@ export function registerGameScene(k: KAPLAYCtx): void {
         gear.onEnemyKilled(enemy);
         quests.onKill(enemy.isElite, enemy.isBoss);
         if (enemy.isBoss) playSfx(k, "sfx-yoink");
-        enemy.obj.destroy();
+        playDeathAnim(k, enemy);
         spawner.removeAt(index);
         state.enemiesKilled += 1;
         playSfx(k, "sfx-death");
@@ -240,6 +241,55 @@ export function registerGameScene(k: KAPLAYCtx): void {
       }
 
       updatePlayer(k, player, dt);
+
+      // Red Bull activation
+      if (
+        player.stats.hasRedBull &&
+        k.isKeyDown("space") &&
+        nowMs >= player.stats.redBullCooldownMs &&
+        player.stats.speedBuffExpiresMs <= nowMs
+      ) {
+        const REDBULL_DURATION_MS = 2500;
+        const REDBULL_COOLDOWN_MS = 12000;
+        const REDBULL_SPEED_MULT = 2.2;
+        player.stats.speedBuffMult = REDBULL_SPEED_MULT;
+        player.stats.speedBuffExpiresMs = nowMs + REDBULL_DURATION_MS;
+        player.stats.redBullCooldownMs = nowMs + REDBULL_COOLDOWN_MS;
+        playSfx(k, "sfx-levelup");
+
+        // Burst VFX
+        burstVfx(k, {
+          x: player.obj.pos.x,
+          y: player.obj.pos.y,
+          color: [255, 220, 40],
+          sparkles: 10,
+          ringEnd: 40,
+          duration: 0.4,
+        });
+
+        // Speed lines that follow the player briefly
+        for (let i = 0; i < 6; i++) {
+          const offsetX = k.rand(-16, 16);
+          const offsetY = k.rand(-10, 10);
+          const line = k.add([
+            k.rect(k.rand(12, 24), 2),
+            k.pos(player.obj.pos.x + offsetX, player.obj.pos.y + offsetY),
+            k.anchor("center"),
+            k.color(255, 255, 100),
+            k.opacity(0.8),
+            k.z(9),
+          ]);
+          const fadeTime = k.rand(0.3, 0.6);
+          let elapsed = 0;
+          line.onUpdate(() => {
+            elapsed += k.dt();
+            (line as unknown as { opacity: number }).opacity = 0.8 * (1 - elapsed / fadeTime);
+            line.pos.x -= 120 * k.dt();
+            if (elapsed >= fadeTime) line.destroy();
+          });
+        }
+      }
+
       spawner.update(dt, nowMs);
       weapons.update(nowMs, dt);
       chests.update(nowMs, dt);

@@ -135,3 +135,78 @@ export function popLabel(k: KAPLAYCtx, opts: LabelOpts): void {
     if (elapsed >= duration) label.destroy();
   });
 }
+
+interface ImpactOpts {
+  x: number;
+  y: number;
+  /** RGB colour (default white) */
+  color?: [number, number, number];
+  /** Flash radius (default 14) */
+  radius?: number;
+  /** Number of spark particles (default 4) */
+  sparks?: number;
+  /** Whether this was a killing blow — bigger flash (default false) */
+  kill?: boolean;
+}
+
+/**
+ * Quick combat hit-flash: bright circle that pops then fades,
+ * plus small directional sparks.
+ */
+export function impactVfx(k: KAPLAYCtx, opts: ImpactOpts): void {
+  const {
+    x,
+    y,
+    color = [255, 255, 255],
+    radius = 14,
+    sparks = 4,
+    kill = false,
+  } = opts;
+
+  const dur = kill ? 0.25 : 0.15;
+  const startRadius = kill ? radius * 0.6 : radius * 0.4;
+  const endRadius = kill ? radius * 1.6 : radius;
+  const startOpacity = kill ? 0.9 : 0.7;
+
+  // --- flash circle ---
+  const flash = k.add([
+    k.circle(startRadius),
+    k.pos(x, y),
+    k.anchor("center"),
+    k.color(...color),
+    k.opacity(startOpacity),
+    k.z(15),
+  ]);
+  let t = 0;
+  flash.onUpdate(() => {
+    t += k.dt();
+    const p = Math.min(t / dur, 1);
+    (flash as any).radius = startRadius + (endRadius - startRadius) * p;
+    (flash as any).opacity = startOpacity * (1 - p);
+    if (p >= 1) flash.destroy();
+  });
+
+  // --- spark particles ---
+  for (let i = 0; i < sparks; i++) {
+    const angle = k.rand(0, Math.PI * 2);
+    const speed = k.rand(60, 140);
+    const size = k.rand(1.5, 3);
+    const spark = k.add([
+      k.circle(size),
+      k.pos(x, y),
+      k.anchor("center"),
+      k.color(...color),
+      k.opacity(0.9),
+      k.z(15),
+    ]);
+    let st = 0;
+    spark.onUpdate(() => {
+      st += k.dt();
+      const sp = Math.min(st / dur, 1);
+      spark.pos.x += Math.cos(angle) * speed * k.dt();
+      spark.pos.y += Math.sin(angle) * speed * k.dt();
+      (spark as any).opacity = 0.9 * (1 - sp);
+      if (sp >= 1) spark.destroy();
+    });
+  }
+}

@@ -105,3 +105,35 @@ export function updateEnemy(enemy: Enemy, player: Player, dt: number): void {
 export function destroyEnemy(enemy: Enemy): void {
   enemy.obj.destroy();
 }
+
+/**
+ * Play a small death animation: flash white, shrink + spin, fade out, then destroy.
+ */
+export function playDeathAnim(k: KAPLAYCtx, enemy: Enemy): void {
+  const obj = enemy.obj;
+  const startScale = (obj as any).scale?.x ?? 2;
+  let t = 0;
+  const dur = 0.3;
+
+  // flash white on death
+  try {
+    (obj as any).color = k.rgb(255, 255, 255);
+  } catch { /* no color comp — skip */ }
+
+  obj.onUpdate(() => {
+    t += k.dt();
+    const p = Math.min(t / dur, 1);
+
+    // shrink
+    const s = startScale * (1 - p * 0.8);
+    (obj as any).scale = k.vec2(s, s);
+
+    // spin
+    (obj as any).angle = ((obj as any).angle ?? 0) + k.dt() * 600;
+
+    // fade out
+    (obj as any).opacity = 1 - p;
+
+    if (p >= 1) obj.destroy();
+  });
+}

@@ -18,6 +18,8 @@ export interface PlayerStats {
   speedBuffMult: number;
   damageBuffExpiresMs: number;
   speedBuffExpiresMs: number;
+  hasRedBull: boolean;
+  redBullCooldownMs: number;
   weapons: WeaponId[];
   upgrades: Record<string, number>;
   gear: Partial<Record<GearId, number>>;

@@ -12,7 +12,8 @@ export type WeaponId =
   | "warhammerKunai"
   | "arrowHail"
   | "megaBomb"
-  | "bloodspikes";
+  | "bloodspikes"
+  | "fireTrail";
 
 export interface WeaponStats {
   damage: number;
@@ -129,6 +130,13 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     description: "A thicket of vicious spikes covering the ground around you.",
     spriteKey: "weapon-caltrop",
     base: { damage: 14, cooldownMs: 2200, speed: 0, range: 160, count: 7, area: 28 },
+  },
+  fireTrail: {
+    id: "fireTrail",
+    label: "Fire Trail",
+    description: "Leave a trail of scorched earth that burns enemies.",
+    spriteKey: "fire-trail",
+    base: { damage: 8, cooldownMs: 250, speed: 0, range: 0, count: 1, area: 26 },
   },
 };
 

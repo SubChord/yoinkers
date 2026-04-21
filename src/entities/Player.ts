@@ -8,11 +8,12 @@ export interface Player {
   facing: Facing;
   lastHitMs: number;
   regenCarry: number;
+  animTimer: number;
 }
 
 export function createPlayer(k: KAPLAYCtx): Player {
   const obj = k.add([
-    k.sprite("player-walk", { frame: 0, anim: "idle-down" }),
+    k.sprite("player-walk", { frame: 0 }),
     k.pos(0, 0),
     k.anchor("center"),
     k.scale(2),
@@ -34,6 +35,8 @@ export function createPlayer(k: KAPLAYCtx): Player {
     speedBuffMult: 1,
     damageBuffExpiresMs: 0,
     speedBuffExpiresMs: 0,
+    hasRedBull: false,
+    redBullCooldownMs: 0,
     weapons: ["shuriken"],
     upgrades: {},
     gear: {},
@@ -45,6 +48,7 @@ export function createPlayer(k: KAPLAYCtx): Player {
     facing: "down",
     lastHitMs: -1000,
     regenCarry: 0,
+    animTimer: 0,
   };
 }
 
@@ -83,7 +87,7 @@ export function updatePlayer(k: KAPLAYCtx, player: Player, dt: number): void {
     // on exact diagonal, keep the current facing
   }
 
-  applyAnimation(player, moving);
+  applyAnimation(player, moving, dt);
 
   if (player.stats.regenPerSec > 0 && player.stats.hp < player.stats.maxHp) {
     player.regenCarry += player.stats.regenPerSec * dt;
@@ -95,11 +99,25 @@ export function updatePlayer(k: KAPLAYCtx, player: Player, dt: number): void {
   }
 }
 
-function applyAnimation(player: Player, moving: boolean): void {
-  const prefix = moving ? "walk" : "idle";
-  const animKey = `${prefix}-${player.facing}`;
-  const current = (player.obj as GameObj & { curAnim?: () => string | null }).curAnim?.();
-  if (current !== animKey) {
-    (player.obj as GameObj & { play: (key: string) => void }).play(animKey);
+// First frame of each row in the 4x4 walk spritesheet
+const FACING_ROW: Record<Facing, number> = {
+  down: 0,
+  up: 4,
+  left: 8,
+  right: 12,
+};
+
+const WALK_FPS = 8;
+const WALK_FRAMES = 4;
+
+function applyAnimation(player: Player, moving: boolean, dt: number): void {
+  const row = FACING_ROW[player.facing];
+  if (moving) {
+    player.animTimer += dt * WALK_FPS;
+    const frameIndex = Math.floor(player.animTimer) % WALK_FRAMES;
+    (player.obj as any).frame = row + frameIndex;
+  } else {
+    player.animTimer = 0;
+    (player.obj as any).frame = row;
   }
 }

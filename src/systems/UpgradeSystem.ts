@@ -74,5 +74,8 @@ export function applyUpgrade(player: Player, upgrade: UpgradeDef): void {
     case "boost-cooldown":
       stats.cooldownMult *= 0.92;
       break;
+    case "unlock-redBull":
+      stats.hasRedBull = true;
+      break;
   }
 }
