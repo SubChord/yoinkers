@@ -24,7 +24,15 @@ export type WeaponId =
   | "chainLightning"
   | "homingShuriken"
   | "krabbyPatty"
-  | "bestFriends";
+  | "bestFriends"
+  | "infernoTide"
+  | "holyDeluge"
+  | "catastrophicBeam"
+  | "glacialLance"
+  | "plagueMiasma"
+  | "ballista"
+  | "tempest"
+  | "vengefulStar";
 
 export interface WeaponStats {
   damage: number;
@@ -225,6 +233,62 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     description: "SpongeBob and Patrick blanket the battlefield with piercing patties in every direction.",
     spriteKey: "weapon-krabby-patty",
     base: { damage: 22, cooldownMs: 700, speed: 400, range: 480, count: 8, area: 24 },
+  },
+  infernoTide: {
+    id: "infernoTide",
+    label: "Inferno Tide",
+    description: "A roaring wall of flame surges from your every step, burning hotter and lingering longer.",
+    spriteKey: "fire-trail",
+    base: { damage: 16, cooldownMs: 200, speed: 0, range: 0, count: 1, area: 38 },
+  },
+  holyDeluge: {
+    id: "holyDeluge",
+    label: "Holy Deluge",
+    description: "A cascade of sanctified vials drowns enemies in scorching divine puddles.",
+    spriteKey: "holy-water",
+    base: { damage: 22, cooldownMs: 1500, speed: 280, range: 300, count: 3, area: 70 },
+  },
+  catastrophicBeam: {
+    id: "catastrophicBeam",
+    label: "Catastrophic Beam",
+    description: "A frenzied lattice of red dots — every cat in the realm joins the chase.",
+    spriteKey: "laser-dot",
+    base: { damage: 18, cooldownMs: 180, speed: 1100, range: 620, count: 3, area: 16 },
+  },
+  glacialLance: {
+    id: "glacialLance",
+    label: "Glacial Lance",
+    description: "A piercing icicle spear that freezes everything it touches solid for 3s.",
+    spriteKey: "frostbolt",
+    base: { damage: 30, cooldownMs: 750, speed: 520, range: 560, count: 1, area: 22 },
+  },
+  plagueMiasma: {
+    id: "plagueMiasma",
+    label: "Plague Miasma",
+    description: "Rolling banks of festering green fog blanket the battlefield in lasting decay.",
+    spriteKey: "poison-cloud",
+    base: { damage: 14, cooldownMs: 2600, speed: 0, range: 0, count: 3, area: 80 },
+  },
+  ballista: {
+    id: "ballista",
+    label: "Ballista",
+    description: "A monstrous siege bolt that punches through entire ranks of enemies.",
+    spriteKey: "crossbow-bolt",
+    base: { damage: 140, cooldownMs: 1500, speed: 760, range: 720, count: 1, area: 22 },
+  },
+  tempest: {
+    id: "tempest",
+    label: "Tempest",
+    description: "A roiling thunderhead that arcs between dozens of foes in a single strike.",
+    spriteKey: "chain-bolt",
+    base: { damage: 32, cooldownMs: 950, speed: 0, range: 220, count: 4, area: 0 },
+  },
+  vengefulStar: {
+    id: "vengefulStar",
+    label: "Vengeful Star",
+    description: "A swarm of cursed shuriken that hunt their prey with serpentine relentlessness.",
+    spriteKey: "shuriken",
+    base: { damage: 30, cooldownMs: 700, speed: 420, range: 620, count: 3, area: 22 },
   },
 };
 

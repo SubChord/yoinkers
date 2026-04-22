@@ -14,6 +14,12 @@ const FIRE_TRAIL_HIT_COOLDOWN_MS = 300;
 const FIRE_TRAIL_LIFETIME_MS = 4000;
 const FIRE_TRAIL_DROP_DIST = 28;
 const FIRE_ARROW_BONUS_MULT = 1.5;
+// Cross-weapon synergies. Each one boosts the listed weapon's damage when the
+// player owns a partner weapon (or its evolved variant). See README synergies.
+const SHATTER_BONUS_MULT = 1.6;        // frostbolt|glacialLance → boosts chainLightning|tempest
+const HEX_MARK_BONUS_MULT = 1.5;       // homingShuriken|vengefulStar → boosts crossbow|ballista
+const SACRED_PLAGUE_BONUS_MULT = 1.5;  // holyWater|holyDeluge → boosts poisonCloud|plagueMiasma
+const INFERNO_BOMB_BONUS_MULT = 1.5;   // fireTrail|infernoTide → boosts bomb|megaBomb
 
 const POISON_CLOUD_LIFETIME_MS = 7000;
 const POISON_CLOUD_HIT_COOLDOWN_MS = 600;
@@ -105,7 +111,11 @@ export class WeaponSystem {
     }
 
     if (weaponId === "fireTrail") {
-      this.dropFireTrail(stats);
+      this.dropFireTrail(stats, "fireTrail");
+      return;
+    }
+    if (weaponId === "infernoTide") {
+      this.dropFireTrail(stats, "infernoTide");
       return;
     }
 
@@ -150,34 +160,55 @@ export class WeaponSystem {
         this.fireHolyBeam(stats);
         break;
       case "holyWater":
-        this.fireHolyWater(stats);
+        this.fireHolyWater(stats, "holyWater");
         break;
       case "judasPriest":
         this.fireJudasPriest(stats);
         break;
       case "laserPointer":
-        this.fireLaserPointer(stats);
+        this.fireLaserPointer(stats, "laserPointer");
         break;
       case "frostbolt":
         this.fireFrostbolt(stats);
         break;
       case "poisonCloud":
-        this.dropPoisonCloud(stats);
+        this.dropPoisonCloud(stats, "poisonCloud");
         break;
       case "crossbow":
-        this.fireCrossbow(stats);
+        this.fireCrossbow(stats, "crossbow");
         break;
       case "chainLightning":
-        this.fireChainLightning(stats, nowMs);
+        this.fireChainLightning(stats, nowMs, "chainLightning");
         break;
       case "homingShuriken":
-        this.fireHomingShuriken(stats);
+        this.fireHomingShuriken(stats, "homingShuriken");
         break;
       case "krabbyPatty":
         this.fireKrabbyPatty(stats);
         break;
       case "bestFriends":
         this.fireBestFriends(stats);
+        break;
+      case "holyDeluge":
+        this.fireHolyWater(stats, "holyDeluge");
+        break;
+      case "catastrophicBeam":
+        this.fireLaserPointer(stats, "catastrophicBeam");
+        break;
+      case "glacialLance":
+        this.fireGlacialLance(stats);
+        break;
+      case "plagueMiasma":
+        this.dropPoisonCloud(stats, "plagueMiasma");
+        break;
+      case "ballista":
+        this.fireCrossbow(stats, "ballista");
+        break;
+      case "tempest":
+        this.fireChainLightning(stats, nowMs, "tempest");
+        break;
+      case "vengefulStar":
+        this.fireHomingShuriken(stats, "vengefulStar");
         break;
     }
   }
@@ -264,33 +295,79 @@ export class WeaponSystem {
     }
   }
 
-  private dropPoisonCloud(stats: WeaponStats): void {
-    const cx = this.player.obj.pos.x;
-    const cy = this.player.obj.pos.y;
-    for (let i = 0; i < stats.count; i += 1) {
-      const jitter = stats.count > 1 ? 40 : 0;
-      const ox = stats.count === 1 ? 0 : this.k.rand(-jitter, jitter);
-      const oy = stats.count === 1 ? 0 : this.k.rand(-jitter, jitter);
+  private fireGlacialLance(stats: WeaponStats): void {
+    const p = this.player.obj.pos;
+    const target = this.spawner.nearest(p.x, p.y);
+    const baseDir = target
+      ? this.k.vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y).unit()
+      : this.k.vec2(1, 0);
+    const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    const count = Math.max(1, stats.count);
+    for (let i = 0; i < count; i += 1) {
+      const offset = count === 1 ? 0 : (i - (count - 1) / 2) * 0.16;
+      const angle = baseAngle + offset;
+      const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
       this.projectiles.push(
         spawnProjectile(this.k, {
-          kind: "ground",
-          weapon: "poisonCloud",
-          sprite: WEAPON_DEFS.poisonCloud.spriteKey,
-          x: cx + ox,
-          y: cy + oy,
-          dir: this.k.vec2(1, 0),
-          speed: 0,
+          kind: "pierce",
+          weapon: "glacialLance",
+          sprite: WEAPON_DEFS.glacialLance.spriteKey,
+          x: p.x,
+          y: p.y,
+          dir,
+          speed: stats.speed,
           damage: stats.damage,
           area: stats.area,
-          maxRange: 0,
-          lifetimeMs: POISON_CLOUD_LIFETIME_MS,
-          scale: 2.5,
+          maxRange: stats.range,
+          piercesLeft: 4,
+          rotationOffset: 0,
+          scale: 1.6,
         }),
       );
     }
   }
 
-  private fireCrossbow(stats: WeaponStats): void {
+  private hasAnyWeapon(...ids: WeaponId[]): boolean {
+    for (const id of ids) {
+      if (this.player.stats.weapons.includes(id)) return true;
+    }
+    return false;
+  }
+
+  private dropPoisonCloud(stats: WeaponStats, weapon: WeaponId): void {
+    const cx = this.player.obj.pos.x;
+    const cy = this.player.obj.pos.y;
+    const lifetimeMs =
+      weapon === "plagueMiasma" ? POISON_CLOUD_LIFETIME_MS * 1.5 : POISON_CLOUD_LIFETIME_MS;
+    const scale = weapon === "plagueMiasma" ? 3.2 : 2.5;
+    const sacredPlague = this.hasAnyWeapon("holyWater", "holyDeluge");
+    const damage = sacredPlague ? stats.damage * SACRED_PLAGUE_BONUS_MULT : stats.damage;
+    for (let i = 0; i < stats.count; i += 1) {
+      const jitter = stats.count > 1 ? 60 : 0;
+      const ox = stats.count === 1 ? 0 : this.k.rand(-jitter, jitter);
+      const oy = stats.count === 1 ? 0 : this.k.rand(-jitter, jitter);
+      const proj = spawnProjectile(this.k, {
+        kind: "ground",
+        weapon,
+        sprite: WEAPON_DEFS[weapon].spriteKey,
+        x: cx + ox,
+        y: cy + oy,
+        dir: this.k.vec2(1, 0),
+        speed: 0,
+        damage,
+        area: stats.area,
+        maxRange: 0,
+        lifetimeMs,
+        scale,
+      });
+      if (sacredPlague) {
+        proj.obj.color = this.k.rgb(220, 255, 180);
+      }
+      this.projectiles.push(proj);
+    }
+  }
+
+  private fireCrossbow(stats: WeaponStats, weapon: WeaponId): void {
     const p = this.player.obj.pos;
     const target = this.spawner.nearest(p.x, p.y);
     if (!target) return;
@@ -298,37 +375,44 @@ export class WeaponSystem {
       .vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y)
       .unit();
     const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    const piercesLeft = weapon === "ballista" ? 6 : 2;
+    const scale = weapon === "ballista" ? 3 : 2.2;
+    const hexMark = this.hasAnyWeapon("homingShuriken", "vengefulStar");
+    const damage = hexMark ? stats.damage * HEX_MARK_BONUS_MULT : stats.damage;
     for (let i = 0; i < stats.count; i += 1) {
       const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.1;
       const angle = baseAngle + offset;
       const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
-      this.projectiles.push(
-        spawnProjectile(this.k, {
-          kind: "pierce",
-          weapon: "crossbow",
-          sprite: WEAPON_DEFS.crossbow.spriteKey,
-          x: p.x,
-          y: p.y,
-          dir,
-          speed: stats.speed,
-          damage: stats.damage,
-          area: stats.area,
-          maxRange: stats.range,
-          piercesLeft: 2,
-          rotationOffset: 0,
-          scale: 2.2,
-        }),
-      );
+      const proj = spawnProjectile(this.k, {
+        kind: "pierce",
+        weapon,
+        sprite: WEAPON_DEFS[weapon].spriteKey,
+        x: p.x,
+        y: p.y,
+        dir,
+        speed: stats.speed,
+        damage,
+        area: stats.area,
+        maxRange: stats.range,
+        piercesLeft,
+        rotationOffset: 0,
+        scale,
+      });
+      if (hexMark) {
+        proj.obj.color = this.k.rgb(200, 140, 255);
+      }
+      this.projectiles.push(proj);
     }
   }
 
-  private fireHomingShuriken(stats: WeaponStats): void {
+  private fireHomingShuriken(stats: WeaponStats, weapon: WeaponId): void {
     const p = this.player.obj.pos;
     const target = this.spawner.nearest(p.x, p.y);
     const baseDir = target
       ? this.k.vec2(target.obj.pos.x - p.x, target.obj.pos.y - p.y).unit()
       : this.k.vec2(1, 0);
     const baseAngle = Math.atan2(baseDir.y, baseDir.x);
+    const scale = weapon === "vengefulStar" ? 1.4 : 1;
     for (let i = 0; i < stats.count; i += 1) {
       const offset = stats.count === 1 ? 0 : (i - (stats.count - 1) / 2) * 0.6;
       const angle = baseAngle + offset;
@@ -336,8 +420,8 @@ export class WeaponSystem {
       this.projectiles.push(
         spawnProjectile(this.k, {
           kind: "linear",
-          weapon: "homingShuriken",
-          sprite: WEAPON_DEFS.homingShuriken.spriteKey,
+          weapon,
+          sprite: WEAPON_DEFS[weapon].spriteKey,
           x: p.x,
           y: p.y,
           dir,
@@ -345,12 +429,13 @@ export class WeaponSystem {
           damage: stats.damage,
           area: stats.area,
           maxRange: stats.range,
+          scale,
         }),
       );
     }
   }
 
-  private fireChainLightning(stats: WeaponStats, nowMs: number): void {
+  private fireChainLightning(stats: WeaponStats, nowMs: number, weapon: WeaponId): void {
     const p = this.player.obj.pos;
     const first = this.spawner.nearest(p.x, p.y);
     if (!first) return;
@@ -360,14 +445,22 @@ export class WeaponSystem {
     let prevX = p.x;
     let prevY = p.y;
     let next: Enemy | null = first;
+    const shatter = this.hasAnyWeapon("frostbolt", "glacialLance");
+    const color: [number, number, number] = shatter
+      ? [200, 230, 255]
+      : weapon === "tempest"
+        ? [180, 200, 255]
+        : [255, 230, 120];
+    const synergyMult = shatter ? SHATTER_BONUS_MULT : 1;
 
     for (let jump = 0; jump < maxJumps && next; jump += 1) {
       const enemyIndex = this.spawner.enemies.indexOf(next);
       if (enemyIndex < 0) break;
 
       // Diminishing damage on each jump
-      const damage = Math.floor(stats.damage * Math.pow(0.8, jump));
-      this.dealInstantDamage("chainLightning", damage, enemyIndex, [255, 230, 120]);
+      const falloff = weapon === "tempest" ? 0.9 : 0.8;
+      const damage = Math.floor(stats.damage * synergyMult * Math.pow(falloff, jump));
+      this.dealInstantDamage(weapon, damage, enemyIndex, color);
       hit.add(enemyIndex);
 
       this.spawnChainArc(prevX, prevY, next.obj.pos.x, next.obj.pos.y);
@@ -471,7 +564,7 @@ export class WeaponSystem {
     }
   }
 
-  private fireLaserPointer(stats: WeaponStats): void {
+  private fireLaserPointer(stats: WeaponStats, weapon: WeaponId = "laserPointer"): void {
     const p = this.player.obj.pos;
     const target = this.spawner.nearest(p.x, p.y);
     const baseDir = target
@@ -485,8 +578,8 @@ export class WeaponSystem {
       this.projectiles.push(
         spawnProjectile(this.k, {
           kind: "pierce",
-          weapon: "laserPointer",
-          sprite: WEAPON_DEFS.laserPointer.spriteKey,
+          weapon,
+          sprite: WEAPON_DEFS[weapon].spriteKey,
           x: p.x,
           y: p.y,
           dir,
@@ -535,7 +628,7 @@ export class WeaponSystem {
     }
   }
 
-  private fireHolyWater(stats: WeaponStats): void {
+  private fireHolyWater(stats: WeaponStats, weapon: WeaponId = "holyWater"): void {
     const p = this.player.obj.pos;
     const target = this.spawner.nearest(p.x, p.y);
     const dir = target
@@ -548,8 +641,8 @@ export class WeaponSystem {
       this.projectiles.push(
         spawnProjectile(this.k, {
           kind: "bomb",
-          weapon: "holyWater",
-          sprite: WEAPON_DEFS.holyWater.spriteKey,
+          weapon,
+          sprite: WEAPON_DEFS[weapon].spriteKey,
           x: p.x,
           y: p.y,
           dir: d,
@@ -788,24 +881,28 @@ export class WeaponSystem {
 
     const baseAngle = Math.atan2(baseDir.y, baseDir.x);
     const scale = weapon === "megaBomb" ? 4 : 2.5;
+    const inferno = this.hasAnyWeapon("fireTrail", "infernoTide");
+    const damage = inferno ? stats.damage * INFERNO_BOMB_BONUS_MULT : stats.damage;
     for (let i = 0; i < stats.count; i += 1) {
       const angle = baseAngle + (i - (stats.count - 1) / 2) * 0.3;
       const dir = this.k.vec2(Math.cos(angle), Math.sin(angle));
-      this.projectiles.push(
-        spawnProjectile(this.k, {
-          kind: "bomb",
-          weapon,
-          sprite: WEAPON_DEFS[weapon].spriteKey,
-          x: this.player.obj.pos.x,
-          y: this.player.obj.pos.y,
-          dir,
-          speed: stats.speed,
-          damage: stats.damage,
-          area: stats.area,
-          maxRange: stats.range,
-          scale,
-        }),
-      );
+      const proj = spawnProjectile(this.k, {
+        kind: "bomb",
+        weapon,
+        sprite: WEAPON_DEFS[weapon].spriteKey,
+        x: this.player.obj.pos.x,
+        y: this.player.obj.pos.y,
+        dir,
+        speed: stats.speed,
+        damage,
+        area: stats.area,
+        maxRange: stats.range,
+        scale,
+      });
+      if (inferno) {
+        proj.obj.color = this.k.rgb(255, 140, 30);
+      }
+      this.projectiles.push(proj);
     }
   }
 
@@ -837,7 +934,7 @@ export class WeaponSystem {
     void nowMs;
   }
 
-  private dropFireTrail(stats: WeaponStats): void {
+  private dropFireTrail(stats: WeaponStats, weapon: WeaponId = "fireTrail"): void {
     const px = this.player.obj.pos.x;
     const py = this.player.obj.pos.y;
     const dx = px - this.lastFireDropX;
@@ -863,7 +960,7 @@ export class WeaponSystem {
     const proj: Projectile = {
       obj,
       kind: "ground",
-      weapon: "fireTrail",
+      weapon,
       dir: this.k.vec2(0, 0),
       speed: 0,
       damage: stats.damage,
@@ -1233,14 +1330,22 @@ const WEAPON_HIT_COLORS: Partial<Record<WeaponId, [number, number, number]>> = {
   bomb: [255, 160, 60],
   caltrop: [180, 220, 180],
   fireTrail: [255, 100, 20],
+  infernoTide: [255, 60, 0],
   holyBeam: [255, 245, 180],
   holyWater: [140, 220, 255],
+  holyDeluge: [100, 200, 255],
   laserPointer: [255, 60, 60],
+  catastrophicBeam: [255, 30, 30],
   frostbolt: [180, 230, 255],
+  glacialLance: [140, 210, 255],
   poisonCloud: [140, 220, 120],
+  plagueMiasma: [100, 200, 80],
   crossbow: [220, 200, 150],
+  ballista: [200, 180, 120],
   chainLightning: [255, 235, 120],
+  tempest: [180, 200, 255],
   homingShuriken: [220, 220, 255],
+  vengefulStar: [200, 180, 255],
 };
 
 function enemyId(enemy: Enemy): number {
@@ -1265,9 +1370,11 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "megaBomb": return 28;
     case "bloodspikes": return 5;
     case "fireTrail": return 5;
+    case "infernoTide": return 8;
     case "holyBeam": return 8;
     case "holyWater": return 4;
     case "judasPriest": return 6;
+    case "holyDeluge": return 7;
     case "laserPointer": return 4;
     case "frostbolt": return 6;
     case "poisonCloud": return 3;
@@ -1276,5 +1383,12 @@ function damageBonusFor(weaponId: WeaponId): number {
     case "homingShuriken": return 8;
     case "krabbyPatty": return 6;
     case "bestFriends": return 5;
+    case "catastrophicBeam": return 6;
+    case "glacialLance": return 10;
+    case "plagueMiasma": return 5;
+    case "ballista": return 28;
+    case "tempest": return 10;
+    case "vengefulStar": return 10;
   }
+  return 0;
 }

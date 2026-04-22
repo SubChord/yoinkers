@@ -23,11 +23,12 @@ export function spawnGear(k: KAPLAYCtx, id: GearId, x: number, y: number): GearD
     k.z(3),
   ]);
 
+  const baseScale = def.id === "patrick" ? 1.1 : 2.2;
   const obj = k.add([
     k.sprite(def.spriteKey),
     k.pos(x, y),
     k.anchor("center"),
-    k.scale(2.2),
+    k.scale(baseScale),
     k.z(4),
   ]);
 

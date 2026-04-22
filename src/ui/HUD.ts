@@ -49,19 +49,38 @@ export function createHud(k: KAPLAYCtx): HudRefs {
   ]);
 
   const gearIcons = new Map<GearId, GearIconRef>();
+  const gearIconSize = 32;
+  const gearSpacing = 36;
+  const gearStartX = 20;
+  const gearY = 114;
+  const gearStripWidth = GEAR_IDS.length * gearSpacing + 8;
+
+  // Dark backing panel so gear icons don't blend into the game world.
+  k.add([
+    k.rect(gearStripWidth, gearIconSize + 16, { radius: 6 }),
+    k.pos(gearStartX - 6, gearY - 8),
+    k.color(0, 0, 0),
+    k.opacity(0.55),
+    k.fixed(),
+    k.z(99),
+  ]);
+
   GEAR_IDS.forEach((id, index) => {
-    const x = 20 + index * 44;
+    const x = gearStartX + index * gearSpacing;
+    // Patrick is a 32x32 sprite while every other gear is 16x16; render at
+    // half scale to keep its on-screen size consistent with the rest.
+    const iconScale = id === "patrick" ? 1 : 2;
     const sprite = k.add([
       k.sprite(GEAR_DEFS[id].spriteKey),
-      k.pos(x, 114),
-      k.scale(2),
-      k.opacity(0.15),
+      k.pos(x, gearY),
+      k.scale(iconScale),
+      k.opacity(0.25),
       k.fixed(),
       k.z(100),
     ]);
     const count = k.add([
       k.text("", { size: 12 }),
-      k.pos(x + 28, 134),
+      k.pos(x + 22, gearY + 20),
       k.color(255, 236, 160),
       k.fixed(),
       k.z(101),
@@ -120,7 +139,7 @@ export function updateHud(refs: HudRefs, state: HudState): void {
 
   for (const icon of refs.gearIcons.values()) {
     const count = s.gear[icon.id] ?? 0;
-    (icon.sprite as unknown as { opacity: number }).opacity = count > 0 ? 1 : 0.15;
+    (icon.sprite as unknown as { opacity: number }).opacity = count > 0 ? 1 : 0.25;
     setText(icon.count, count > 1 ? `x${count}` : count === 1 ? "" : "");
   }
 
