@@ -90,8 +90,8 @@ export function spawnEnemy(
 export type EnemyEvent = "none" | "explode";
 
 const LEAPER_LUNGE_RANGE = 340;
-const LEAPER_TELEGRAPH_S = 0.5;
-const LEAPER_LUNGE_SPEED = 720;
+const LEAPER_TELEGRAPH_S = 0.85;
+const LEAPER_LUNGE_SPEED = 580;
 const LEAPER_LUNGE_MAX_S = 0.8;
 
 export function updateEnemy(enemy: Enemy, player: Player, dt: number): EnemyEvent {

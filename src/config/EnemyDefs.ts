@@ -100,7 +100,7 @@ export const ENEMY_DEFS: Record<EnemyId, EnemyDef> = {
   leaper: {
     id: "leaper",
     spriteKey: "enemy-slime",
-    hp: 50, speed: 45, damage: 45, xpValue: 18,
+    hp: 50, speed: 45, damage: 35, xpValue: 18,
     area: 24, minWave: 8, boss: false, scale: 1.1,
     tint: [80, 220, 80],
   },
