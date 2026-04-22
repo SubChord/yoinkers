@@ -1,5 +1,5 @@
 import type { KAPLAYCtx, GameObj } from "kaplay";
-import { GAME_HEIGHT, GAME_WIDTH, WORLD_SIZE } from "../config/GameConfig";
+import { WORLD_SIZE } from "../config/GameConfig";
 import type { Player } from "../entities/Player";
 
 const WALL_THICKNESS = 48;
@@ -23,11 +23,6 @@ const WALL_SPEED_PER_WAVE = 12;
 const LAVA_CORE: [number, number, number] = [220, 60, 10];
 const LAVA_BRIGHT: [number, number, number] = [255, 160, 30];
 const LAVA_OUTLINE: [number, number, number] = [255, 200, 60];
-
-// Full-screen popup timing
-const POPUP_DURATION_MS = 1000;
-const POPUP_ENTER_MS = 200;
-const POPUP_EXIT_MS = 300;
 
 type SweepDir = "right" | "down" | "left" | "up";
 
@@ -105,85 +100,6 @@ export class WallHazardSystem {
     if (this.wall) this.tickWall(dt, nowMs);
   }
 
-  /* ---- full-screen popup ---- */
-
-  private showPopup(): void {
-    const k = this.k;
-    const cx = GAME_WIDTH / 2;
-    const cy = GAME_HEIGHT / 2;
-    const created: GameObj[] = [];
-
-    // Backdrop
-    const backdrop = k.add([
-      k.rect(GAME_WIDTH, GAME_HEIGHT),
-      k.pos(0, 0), k.color(20, 8, 0), k.opacity(0),
-      k.fixed(), k.z(300),
-    ]);
-    created.push(backdrop);
-
-    // Glow ring
-    const glow = k.add([
-      k.circle(200),
-      k.pos(cx, cy), k.anchor("center"),
-      k.color(255, 120, 20), k.opacity(0), k.scale(0.2),
-      k.fixed(), k.z(301),
-    ]);
-    created.push(glow);
-
-    // Title
-    const title = k.add([
-      k.text("LAVA WALL", { size: 48 }),
-      k.pos(cx, cy - 20), k.anchor("center"),
-      k.color(...LAVA_BRIGHT), k.opacity(0), k.scale(0.5),
-      k.fixed(), k.z(303),
-    ]);
-    created.push(title);
-
-    // Subtitle
-    const sub = k.add([
-      k.text("FIND THE GAP!", { size: 22 }),
-      k.pos(cx, cy + 30), k.anchor("center"),
-      k.color(60, 255, 80), k.opacity(0),
-      k.fixed(), k.z(303),
-    ]);
-    created.push(sub);
-
-    const startedAt = Date.now();
-
-    backdrop.onUpdate(() => {
-      const elapsed = Date.now() - startedAt;
-      if (elapsed >= POPUP_DURATION_MS) {
-        for (const obj of created) obj.destroy();
-        return;
-      }
-
-      if (elapsed < POPUP_ENTER_MS) {
-        const t = elapsed / POPUP_ENTER_MS;
-        const e = easeOutCubic(t);
-        (backdrop as any).opacity = e * 0.5;
-        (glow as any).opacity = e * 0.25;
-        (title as any).opacity = e;
-        (sub as any).opacity = e * 0.8;
-        (glow as any).scaleTo(0.2 + e * 1.0);
-        (title as any).scaleTo(0.5 + easeOutBack(t) * 0.5);
-      } else if (elapsed > POPUP_DURATION_MS - POPUP_EXIT_MS) {
-        const t = (elapsed - (POPUP_DURATION_MS - POPUP_EXIT_MS)) / POPUP_EXIT_MS;
-        const e = 1 - t;
-        (backdrop as any).opacity = e * 0.5;
-        (glow as any).opacity = e * 0.25;
-        (title as any).opacity = e;
-        (sub as any).opacity = e * 0.8;
-      }
-
-      // Pulse glow
-      const pulse = 1 + Math.sin(elapsed * 0.012) * 0.08;
-      (glow as any).scaleTo(1.2 * pulse);
-    });
-
-    this.playSfx("sfx-hit");
-    this.k.shake(4);
-  }
-
   /* ---- telegraph ---- */
 
   private beginTelegraph(nowMs: number, wave: number): void {
@@ -210,8 +126,9 @@ export class WallHazardSystem {
     const speedIdx = Math.min(this.wallCount, WALL_BASE_SPEEDS.length - 1);
     const speed = WALL_BASE_SPEEDS[speedIdx] + Math.max(0, wave - FIRST_WALL_WAVE) * WALL_SPEED_PER_WAVE;
 
-    // Show full-screen popup
-    this.showPopup();
+    // Sound cue for incoming wall
+    this.playSfx("sfx-hit");
+    this.k.shake(3);
 
     // Flashing lava edge markers
     const objs: GameObj[] = [];
@@ -390,17 +307,4 @@ export class WallHazardSystem {
     this.damageFlash.flash();
     this.k.shake(6);
   }
-}
-
-/* ---- easing helpers ---- */
-
-function easeOutCubic(t: number): number {
-  const c = 1 - t;
-  return 1 - c * c * c;
-}
-
-function easeOutBack(t: number): number {
-  const c1 = 1.70158;
-  const c3 = c1 + 1;
-  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
